@@ -52,7 +52,7 @@ button{font:inherit;color:inherit}
 .stage[data-size="play"]{width:min(200px,50vw)}
 .stage[data-size="play"] .zoom{display:none}
 body.typing .wrap{padding-bottom:75vh}
-#globe{width:100%;aspect-ratio:1;max-width:100%;display:block;touch-action:pan-y;cursor:grab}
+#globe{width:100%;aspect-ratio:1;max-width:100%;display:block;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:grab}
 #globe:active{cursor:grabbing}
 .tip{position:absolute;z-index:5;transform:translate(-50%,calc(-100% - 12px));background:var(--paper);color:var(--edge);border-radius:6px;padding:6px 10px;font-size:14px;white-space:nowrap;pointer-events:none}
 .tip b{display:block;font-weight:800}
@@ -240,7 +240,13 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .credit b{color:var(--paper);font-stretch:125%;font-weight:900;letter-spacing:.04em}
 @media (max-width:520px){
   .stage[data-size="play"]{width:0;height:0;margin:0;overflow:hidden}
-  .stage[data-size="md"]{width:min(250px,66vw)}
+  .stage[data-size="md"]{width:min(250px,66vw,34svh)}
+  .stage[data-size="lg"]{width:min(280px,72vw,36svh)}
+  #stage-hint{font-size:12px;margin-top:2px}
+  .headline{font-size:clamp(28px,8.4vw,36px)}
+  .start{display:flex;flex-direction:column}
+  .start>.lede{order:1;font-size:15px}
+  .start>.status,.start>.linkish,.start>section{order:2}
   .legend ul{grid-template-columns:1fr}
   #hud-day{display:none}
 }
@@ -696,6 +702,7 @@ function drawFrame(t){
   if(w>=60){const px=Math.round(w*dpr);if(cv.width!==px){cv.width=px;cv.height=px;}
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,w);
     if(GL.anim){const k=Math.min(1,(t-GL.anim.start)/GL.anim.dur);GL.rot=GL.anim.interp(d3.easeCubicInOut(k));if(k>=1)GL.anim=null;}
+    else if(GL.fling&&!GL.drag){const f=GL.fling;GL.rot=[GL.rot[0]+f.vx*dt,Math.max(-80,Math.min(80,GL.rot[1]+f.vy*dt)),0];const k=Math.pow(.93,dt/16);f.vx*=k;f.vy*=k;if(Math.abs(f.vx)+Math.abs(f.vy)<.004)GL.fling=null;}
     else if(GL.spin&&!GL.drag&&!reduceMotion)GL.rot=[GL.rot[0]+dt*GL.speed,GL.rot[1],0];
     GL.zoom+=(GL.zoomTo-GL.zoom)*(reduceMotion?1:.2);
     if(!GL.spin&&GL.autoSpin&&!GL.drag&&!GL.anim&&t-GL.lastTouch>20000)GL.spin=true;
@@ -738,13 +745,21 @@ function showTip(hit){const tip=$("tip");if(!hit||!GL.info){tip.hidden=true;retu
   tip.replaceChildren(...[h("b",null,C[hit.id].name),info?h("span",null,info.style?h("i",{class:"dot",style:info.style}):null,info.text):null].filter(Boolean));tip.style.left=hit.x+"px";tip.style.top=hit.y+"px";tip.hidden=false;
   clearTimeout(showTip.t);showTip.t=setTimeout(()=>{tip.hidden=true},2600);}
 const touch=()=>{GL.lastTouch=performance.now()};
-GL.cv.addEventListener("pointerdown",e=>{touch();GL.drag={x:e.clientX,y:e.clientY,rot:GL.rot.slice(),moved:false,id:e.pointerId};GL.anim=null;});
-GL.cv.addEventListener("pointermove",e=>{const d=GL.drag;if(d)touch();
+const PTR=new Map();let pinch=null;
+GL.cv.addEventListener("pointerdown",e=>{touch();PTR.set(e.pointerId,{x:e.clientX,y:e.clientY});GL.fling=null;GL.anim=null;
+  if(PTR.size===2){const [a,b]=[...PTR.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,z:GL.zoomTo};GL.drag=null;return;}
+  GL.drag={x:e.clientX,y:e.clientY,rot:GL.rot.slice(),moved:false,id:e.pointerId,vx:0,vy:0,lx:e.clientX,ly:e.clientY,lt:performance.now()};});
+GL.cv.addEventListener("pointermove",e=>{if(PTR.has(e.pointerId))PTR.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&PTR.size>=2){const [a,b]=[...PTR.values()];GL.zoomTo=Math.max(1,Math.min(6,pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d));GL.spin=false;touch();return;}
+  const d=GL.drag;if(d){touch();const now=performance.now(),dtm=Math.max(1,now-d.lt),s=180/(Math.PI*(GL.cv.clientWidth/2-14)*GL.zoom);
+    d.vx=.6*d.vx+.4*((e.clientX-d.lx)*s/dtm);d.vy=.6*d.vy+.4*(-(e.clientY-d.ly)*s/dtm);d.lx=e.clientX;d.ly=e.clientY;d.lt=now;}
   if(d){const dx=e.clientX-d.x,dy=e.clientY-d.y;if(!d.moved&&Math.abs(dx)+Math.abs(dy)>4){d.moved=true;try{GL.cv.setPointerCapture(d.id)}catch(_){}}
     if(d.moved){const s=180/(Math.PI*(GL.cv.clientWidth/2-14)*GL.zoom);GL.rot=[d.rot[0]+dx*s,Math.max(-80,Math.min(80,d.rot[1]-dy*s)),0];GL.spin=false;$("tip").hidden=true;}}
   else if(e.pointerType==="mouse")showTip(pick(e));});
-GL.cv.addEventListener("pointerup",e=>{const d=GL.drag;GL.drag=null;if(d&&!d.moved)showTip(pick(e));});
-GL.cv.addEventListener("pointercancel",()=>{GL.drag=null});
+GL.cv.addEventListener("pointerup",e=>{PTR.delete(e.pointerId);if(pinch){if(PTR.size<2)pinch=null;GL.drag=null;return;}
+  const d=GL.drag;GL.drag=null;if(d&&!d.moved)showTip(pick(e));
+  else if(d&&!reduceMotion&&performance.now()-d.lt<80){const v=Math.hypot(d.vx,d.vy);if(v>.02){const c=Math.min(1,.6/v);GL.fling={vx:d.vx*c,vy:d.vy*c};}}});
+GL.cv.addEventListener("pointercancel",e=>{PTR.delete(e.pointerId);if(PTR.size<2)pinch=null;GL.drag=null});
 GL.cv.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse")$("tip").hidden=true});
 function setStage(size,hint){$("stage").dataset.size=size;const el=$("stage-hint");el.hidden=!hint;if(typeof hint==="string")el.textContent=hint;}
 function zoomBy(k){GL.zoomTo=Math.max(1,Math.min(6,GL.zoomTo*k));GL.spin=false;touch();}
@@ -999,7 +1014,7 @@ function renderReveal(){
     if(a.t<0){if(!alive())return;sfx.miss();meter.classList.add("shake");}
     else for(let i=0;i<=a.t;i++){if(!alive())return;segs[i].classList.add("on");sfx.tick(i);await sleep(170+i*25);}
     if(!alive())return;
-    tierEl.hidden=false;tierEl.classList.add("pop");shareEl.hidden=false;
+    tierEl.hidden=false;tierEl.classList.add("pop");shareEl.hidden=false;if(innerWidth<=520){const vr=tierEl.closest(".verdict").getBoundingClientRect();if(vr.bottom>innerHeight-20)scrollBy({top:vr.bottom-innerHeight+90,behavior:reduceMotion?"auto":"smooth"});}
     if(a.t>=0){sfx.chime(a.t);countUp(ptsEl,a.pts,700,"+");}
     if(a.t>=3){const r=tierEl.getBoundingClientRect();burst(r.left+Math.min(r.width,260)/2,r.top+r.height/2,[COL.t[a.t],COL.t[5],COL.paper],a.t===5?140:a.t===4?90:45);}
     renderHud();
