@@ -206,6 +206,22 @@ details .chips{margin-top:10px}
 .tiergroup h3 em{font-style:normal;font-weight:600;font-size:13px;color:var(--muted)}
 
 .foot{font-size:13px;color:var(--muted);margin:0}
+.mark-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+.mark-text small{font-size:9.5px;letter-spacing:.14em;color:var(--muted);font-weight:800;margin-top:4px}
+.help-btn{font-weight:900;font-size:17px;font-stretch:110%}
+.tierkey{display:flex;flex-wrap:wrap;gap:5px 12px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.tierkey span{display:inline-flex;align-items:center;gap:5px}
+.linkish{align-self:flex-start;background:none;border:0;padding:2px 0;color:var(--paper);font-weight:700;font-size:15px;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+dialog#help{width:min(520px,calc(100vw - 24px));max-width:none;background:var(--panel);color:var(--paper);border:2px solid var(--line-strong);border-radius:12px;padding:0}
+dialog#help::backdrop{background:rgba(4,9,22,.78)}
+.help-in{padding:20px 20px 22px;display:flex;flex-direction:column;gap:14px;max-height:86vh;overflow:auto}
+.help-h{margin:0;font-stretch:125%;font-weight:900;font-size:24px}
+.help-steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.help-tiers{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+.help-tiers li{display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}
+.help-tiers li span{color:var(--muted);font-size:12.5px}
+.help-note{margin:0;font-size:14px;color:var(--muted)}
+@media (max-width:420px){.help-tiers{grid-template-columns:1fr}}
 .credit{margin:6px 0 0;padding-top:14px;border-top:2px solid var(--line);font-size:13.5px;color:var(--muted)}
 .credit b{color:var(--paper);font-stretch:125%;font-weight:900;letter-spacing:.04em}
 @media (max-width:520px){
@@ -222,12 +238,13 @@ details .chips{margin-top:10px}
 <canvas id="fx" aria-hidden="true"></canvas>
 <div class="wrap">
   <header class="bar">
-    <button class="mark" id="btn-home" aria-label="Rare Earth home" title="Home"><svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="15" cy="15" r="11.5" fill="#060E22"/><circle cx="13" cy="13" r="11.5" fill="#17407F" stroke="#F2ECDF" stroke-width="1.6"/><path d="M6.2 9.4c1.9-1.6 4.4-1.2 5.6.3 1 1.3.2 2.9 1.6 3.6 1.5.8 3-.3 3.6 1.5.5 1.6-1.1 2.5-1.2 4.2-.1 1.5 1 2.6.4 3.5-3.2-.3-4.7-2.8-4.6-5.1.1-1.9-1.8-2.1-3.4-2.7-1.6-.6-2.5-1.7-2.4-3.2zM16.4 5.2c1.6.1 3.2.8 4.4 1.9-.9.8-2.5.5-3.4 1.4-.7.7-1.9.4-2.1-.6-.2-1.1.2-2.1 1.1-2.7z" fill="#EDE5D3"/></svg>Rare Earth</button>
+    <button class="mark" id="btn-home" aria-label="Rare Earth home" title="Home"><svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="15" cy="15" r="11.5" fill="#060E22"/><circle cx="13" cy="13" r="11.5" fill="#17407F" stroke="#F2ECDF" stroke-width="1.6"/><path d="M6.2 9.4c1.9-1.6 4.4-1.2 5.6.3 1 1.3.2 2.9 1.6 3.6 1.5.8 3-.3 3.6 1.5.5 1.6-1.1 2.5-1.2 4.2-.1 1.5 1 2.6.4 3.5-3.2-.3-4.7-2.8-4.6-5.1.1-1.9-1.8-2.1-3.4-2.7-1.6-.6-2.5-1.7-2.4-3.2zM16.4 5.2c1.6.1 3.2.8 4.4 1.9-.9.8-2.5.5-3.4 1.4-.7.7-1.9.4-2.1-.6-.2-1.1.2-2.1 1.1-2.7z" fill="#EDE5D3"/></svg><span class="mark-text">Rare Earth<small>by SMURPHYSLAW</small></span></button>
     <div class="hud">
       <span class="stat-inline" id="hud-day"></span>
       <span class="stat-inline" id="hud-streak">Streak <b>0</b></span>
       <span class="stat-inline" id="hud-score"><b>0</b> pts</span>
       <span class="btns">
+        <button class="icon-btn help-btn" id="btn-help" aria-label="How to play" title="How to play">?</button>
         <button class="icon-btn" id="btn-passport" aria-label="Open your passport" title="Passport"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6zM6 3v18"/><circle cx="12" cy="11" r="3.3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 16.5h5" stroke="currentColor" stroke-width="1.8"/></svg></button>
         <button class="icon-btn" id="btn-sound" aria-label="Sound" aria-pressed="true" title="Sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path id="snd-waves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path id="snd-x" d="M16.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" hidden/></svg></button>
       </span>
@@ -236,9 +253,26 @@ details .chips{margin-top:10px}
   <div class="stage" id="stage" data-size="lg"><canvas id="globe" role="img" aria-label="Globe"></canvas><div class="tip" id="tip" hidden></div><div class="zoom"><button id="zin" aria-label="Zoom in" title="Zoom in">+</button><button id="zout" aria-label="Zoom out" title="Zoom out">−</button></div></div>
   <p class="stage-hint" id="stage-hint" hidden>Drag to spin. Tap a country to see how rare it is.</p>
   <main id="app" aria-live="polite"></main>
-  <p class="foot" id="foot"></p>
-  <p class="credit">A game by <b>SMURPHYSLAW</b>. Anything that can go wrong with your geography will go wrong, usually somewhere in Central Asia.</p>
 </div>
+<dialog id="help" aria-labelledby="help-title"><div class="help-in">
+  <div class="row-between"><h2 class="help-h" id="help-title">How to play</h2><button class="icon-btn" id="help-close" aria-label="Close">×</button></div>
+  <ol class="help-steps">
+    <li>Every day there are five prompts, the same for everyone, like "Name a country that borders Brazil."</li>
+    <li>You get one answer and 30 seconds per prompt. Pick a country from the list or press Enter.</li>
+    <li>Any country that fits scores. The fewer players who give the same answer, the more it's worth.</li>
+    <li>Stuck? Hint tells you how many countries fit and which continents they're on.</li>
+    <li>After each answer the globe lights up every country that fits, colored by how rare it was.</li>
+  </ol>
+  <h3 class="section-h">Rarity tiers</h3>
+  <ul class="help-tiers" id="help-tiers"></ul>
+  <p class="help-note">Tiers are relative to each prompt. The answer most players give is a Tourist Trap, and the one almost nobody thinks of is Terra Incognita, so every prompt has a gold answer waiting.</p>
+  <h3 class="section-h">Where rarity comes from</h3>
+  <p class="help-note" id="foot"></p>
+  <h3 class="section-h">Streaks, passport and archive</h3>
+  <p class="help-note">Play the daily puzzle on its day to build your streak. Every country you name gets stamped in your passport in its tier color. Missed a day? Past puzzles stay playable in the archive on the home page, but they don't count toward your streak.</p>
+  <p class="credit">A game by <b>SMURPHYSLAW</b>. Anything that can go wrong with your geography will go wrong, usually somewhere in Central Asia.</p>
+  <button class="btn wide" id="help-go">Got it</button>
+</div></dialog>
 
 <script>
 /* ---------- countries: id|name|aliases|continents|landlocked|fame (how readily people think of it, 1-10) ---------- */
@@ -474,40 +508,40 @@ function territoryNote(q){const n=norm(q);if(n.length<3)return null;let hit=TERR
 /* ---------- prompts ---------- */
 const L=s=>s.split(" ");
 const PROMPTS=[
- {id:"landlocked",why:"Liechtenstein and Uzbekistan are doubly landlocked: from either one you have to cross two borders to reach the sea.",text:"Name a landlocked country.",test:c=>c.ll},
- {id:"ll-africa",why:"Lesotho sits entirely inside South Africa, and its lowest point is higher than any other country's lowest point.",text:"Name a landlocked country in Africa.",test:c=>c.ll&&c.cont.includes("AF")},
- {id:"ll-europe",why:"You can walk across Vatican City in about 15 minutes. Please don't jog through Mass.",text:"Name a landlocked country in Europe.",test:c=>c.ll&&c.cont.includes("EU")},
- {id:"no-borders",text:"Name a country with no land border at all.",list:L("antigua australia bahamas bahrain barbados capeverde comoros cuba cyprus dominica fiji grenada iceland jamaica japan kiribati madagascar maldives malta marshall mauritius micronesia nauru newzealand palau philippines samoa saotome seychelles singapore solomon srilanka stkitts stlucia stvincent taiwan tonga trinidad tuvalu vanuatu"),why:"Ireland, Haiti, Papua New Guinea and Timor-Leste share their islands with a neighbor, so they don't count."},
- {id:"equator",text:"Name a country the equator passes through.",list:L("ecuador colombia brazil gabon congo drc uganda kenya somalia saotome maldives indonesia kiribati"),why:"The equator crosses 13 countries. São Tomé and Príncipe, the Maldives and Kiribati are the ones people forget."},
- {id:"crescent",why:"Singapore's crescent stands for a young nation on the rise, which surprises people who assume it's religious.",text:"Name a country with a crescent moon on its flag.",list:L("algeria azerbaijan comoros libya malaysia maldives mauritania pakistan singapore tunisia turkey turkmenistan uzbekistan")},
- {id:"monarchy",text:"Name a country that's still a monarchy. The UK doesn't count.",list:L("andorra antigua australia bahamas bahrain belgium belize bhutan brunei cambodia canada denmark eswatini grenada jamaica japan jordan kuwait lesotho liechtenstein luxembourg malaysia monaco morocco netherlands newzealand norway oman png qatar stkitts stlucia stvincent saudi solomon spain sweden thailand tonga tuvalu uae vatican"),fame:{canada:4,australia:4,newzealand:3,jamaica:2,belize:1,png:1,bahamas:2,andorra:2},why:"Canada, Australia, Jamaica and 11 other countries share the British monarch. Andorra has two co-princes, one of them the President of France."},
- {id:"b-france",text:"Name a country that shares a land border with France.",list:L("andorra belgium brazil germany italy luxembourg monaco netherlands spain suriname switzerland"),fame:{brazil:2,netherlands:2,suriname:1},why:"France borders Brazil and Suriname through French Guiana, and the Netherlands on the Caribbean island of Saint Martin."},
- {id:"b-china",text:"Name a country that borders China.",list:L("afghanistan bhutan india kazakhstan kyrgyzstan laos mongolia myanmar nepal northkorea pakistan russia tajikistan vietnam"),why:"China ties Russia for the most neighbors: 14. Afghanistan touches it through the narrow Wakhan Corridor."},
- {id:"b-russia",text:"Name a country that borders Russia.",list:L("norway finland estonia latvia lithuania poland belarus ukraine georgia azerbaijan kazakhstan china mongolia northkorea"),why:"Lithuania and Poland border Russia through Kaliningrad."},
- {id:"b-brazil",text:"Name a country that borders Brazil.",list:L("argentina bolivia colombia france guyana paraguay peru suriname uruguay venezuela"),fame:{france:2},why:"Every South American country except Chile and Ecuador touches Brazil. So does France, through French Guiana."},
- {id:"b-germany",why:"Germany has 9 neighbors, the most of any country that sits entirely in Europe. Family reunions are a lot.",text:"Name a country that borders Germany.",list:L("denmark poland czechia austria switzerland france luxembourg belgium netherlands")},
- {id:"b-drc",text:"Name a country that borders DR Congo.",list:L("angola burundi car congo rwanda southsudan tanzania uganda zambia"),why:"DR Congo touches Tanzania across Lake Tanganyika."},
- {id:"b-austria",why:"Austria has no coastline but once had a navy, back when it ruled the coast of what's now Croatia.",text:"Name a country that borders Austria.",list:L("germany czechia slovakia hungary slovenia italy switzerland liechtenstein")},
- {id:"spanish",text:"Name a country where Spanish is an official language.",list:L("argentina bolivia chile colombia costarica cuba dominicanrep ecuador elsalvador eqguinea guatemala honduras mexico nicaragua panama paraguay peru spain uruguay venezuela"),why:"Equatorial Guinea is the only country in Africa with Spanish as an official language."},
- {id:"portuguese",text:"Name a country where Portuguese is an official language.",list:L("portugal brazil angola mozambique capeverde guineabissau saotome timor eqguinea"),why:"Equatorial Guinea added Portuguese as an official language in 2010."},
- {id:"s-america",why:"Suriname is the only country in South America where Dutch is the official language.",text:"Name a country in South America.",test:c=>c.cont.includes("SA")},
- {id:"oceania",why:"Kiribati spans all four hemispheres and is one of the first places on Earth to start each new day.",text:"Name a country in Oceania.",test:c=>c.cont.includes("OC")},
- {id:"caribbean",why:"The Bahamas has around 700 islands, and only about 30 of them have anyone living on them.",text:"Name an island country in the Caribbean.",list:L("antigua bahamas barbados cuba dominica dominicanrep grenada haiti jamaica stkitts stlucia stvincent trinidad")},
- {id:"capital-name",text:"Name a country whose capital has the country's name in it. Mexico doesn't count.",list:L("guatemala panama kuwait singapore djibouti luxembourg monaco sanmarino vatican andorra saotome"),why:"Andorra la Vella and São Tomé are the sneaky ones."},
- {id:"100m",why:"These 16 countries hold roughly 70% of everyone on Earth. Good luck finding parking.",text:"Name a country with more than 100 million people.",list:L("china india usa indonesia pakistan nigeria brazil bangladesh russia ethiopia mexico japan egypt philippines drc vietnam"),fame:{china:13,india:13,usa:12,brazil:9,russia:9,indonesia:8,japan:7,mexico:7,nigeria:7,pakistan:7}},
- {id:"euro",text:"Name a country that uses the euro.",list:L("austria belgium bulgaria croatia cyprus estonia finland france germany greece ireland italy latvia lithuania luxembourg malta netherlands portugal slovakia slovenia spain andorra monaco sanmarino vatican montenegro kosovo"),fame:{france:13,germany:13,italy:12,spain:12,netherlands:9,portugal:9,greece:9,ireland:8,belgium:8,austria:8},why:"Montenegro and Kosovo use the euro without being in the EU. Bulgaria switched in January 2026."},
- {id:"olympics",text:"Name a country that has hosted the Summer Olympics.",list:L("greece france usa uk sweden belgium netherlands germany finland australia italy japan mexico canada russia southkorea spain china brazil"),fame:{greece:13,usa:12,china:12,uk:11,france:11,brazil:10,japan:10,australia:9,germany:7,italy:7,spain:6,canada:5,mexico:5,russia:5,southkorea:5,belgium:2,netherlands:2,finland:2,sweden:2},why:"Russia counts for Moscow 1980, held when it was part of the Soviet Union."},
- {id:"stan",why:"-stan comes from a Persian word for 'place of', so Afghanistan is roughly 'land of the Afghans'.",text:"Name a country whose name ends in -stan.",test:c=>c.key.endsWith("stan")},
- {id:"land",why:"Finland calls itself Suomi, so it's only Finland to the rest of us.",text:"Name a country whose name ends in -land.",test:c=>c.key.endsWith("land")},
- {id:"z",why:"Zambia and Zimbabwe, the only countries that start with Z, are next-door neighbors and share Victoria Falls.",text:"Name a country with the letter Z in its name.",test:c=>c.key.includes("z")},
- {id:"same-letter",why:"Countries that start and end with A are weirdly common: Albania, Algeria, Andorra, Angola, Argentina, Armenia, Australia, Austria.",text:"Name a country whose name starts and ends with the same letter.",test:c=>c.key[0]===c.key[c.key.length-1]},
- {id:"short",why:"Togo's capital, Lomé, is also four letters. Very efficient country.",text:"Name a country whose name is four letters or fewer.",test:c=>c.key.length<=4},
- {id:"no-a",why:"Without the letter A, Mexico, Peru and Chile end up carrying the whole team.",text:"Name a country with no letter A in its name.",test:c=>!c.key.includes("a")},
- {id:"double",why:"Mississippi would crush this prompt. Sadly it's a state.",text:"Name a country with a double letter in its name. Greece doesn't count.",test:c=>/(.)\1/.test(c.key)&&c.id!=="greece"},
- {id:"m-africa",why:"Mauritius is the one everyone forgets. It's also where the dodo lived, and they forgot about the dodo too.",text:"Name an African country that starts with M.",test:c=>c.cont.includes("AF")&&c.key[0]==="m"},
- {id:"long",why:"The UK's full official name, the United Kingdom of Great Britain and Northern Ireland, is 45 letters long.",text:"Name a country with 12 or more letters in its name.",note:"Spaces and hyphens don't count.",test:c=>c.key.length>=12},
- {id:"mediterranean",text:"Name a country with a Mediterranean coastline.",list:L("spain france monaco italy malta slovenia croatia bosnia montenegro albania greece turkey cyprus syria lebanon israel palestine egypt libya tunisia algeria morocco"),fame:{italy:12,greece:12,spain:11,france:10},why:"Palestine counts through Gaza, and Bosnia and Herzegovina has about 20 km of coast at Neum."},
- {id:"middle-east",text:"Name a country in the Middle East.",list:L("bahrain cyprus egypt iran iraq israel jordan kuwait lebanon oman palestine qatar saudi syria turkey uae yemen"),fame:{saudi:11,iran:10,iraq:10,israel:10,egypt:9},why:"Definitions vary. Here it means the countries of Western Asia plus Egypt."},
+ {id:"landlocked",diff:"e",why:"Liechtenstein and Uzbekistan are doubly landlocked: from either one you have to cross two borders to reach the sea.",text:"Name a landlocked country.",test:c=>c.ll},
+ {id:"ll-africa",diff:"h",why:"Lesotho sits entirely inside South Africa, and its lowest point is higher than any other country's lowest point.",text:"Name a landlocked country in Africa.",test:c=>c.ll&&c.cont.includes("AF")},
+ {id:"ll-europe",diff:"m",why:"You can walk across Vatican City in about 15 minutes. Please don't jog through Mass.",text:"Name a landlocked country in Europe.",test:c=>c.ll&&c.cont.includes("EU")},
+ {id:"no-borders",diff:"m",text:"Name a country with no land border at all.",list:L("antigua australia bahamas bahrain barbados capeverde comoros cuba cyprus dominica fiji grenada iceland jamaica japan kiribati madagascar maldives malta marshall mauritius micronesia nauru newzealand palau philippines samoa saotome seychelles singapore solomon srilanka stkitts stlucia stvincent taiwan tonga trinidad tuvalu vanuatu"),why:"Ireland, Haiti, Papua New Guinea and Timor-Leste share their islands with a neighbor, so they don't count."},
+ {id:"equator",diff:"h",text:"Name a country the equator passes through.",list:L("ecuador colombia brazil gabon congo drc uganda kenya somalia saotome maldives indonesia kiribati"),why:"The equator crosses 13 countries. São Tomé and Príncipe, the Maldives and Kiribati are the ones people forget."},
+ {id:"crescent",diff:"h",why:"Singapore's crescent stands for a young nation on the rise, which surprises people who assume it's religious.",text:"Name a country with a crescent moon on its flag.",list:L("algeria azerbaijan brunei comoros libya malaysia maldives mauritania mongolia nepal pakistan singapore tunisia turkey turkmenistan uzbekistan")},
+ {id:"monarchy",diff:"m",text:"Name a country that's still a monarchy. The UK doesn't count.",list:L("andorra antigua australia bahamas bahrain belgium belize bhutan brunei cambodia canada denmark eswatini grenada jamaica japan jordan kuwait lesotho liechtenstein luxembourg malaysia monaco morocco netherlands newzealand norway oman png qatar stkitts stlucia stvincent saudi solomon spain sweden thailand tonga tuvalu uae vatican"),fame:{canada:4,australia:4,newzealand:3,jamaica:2,belize:1,png:1,bahamas:2,andorra:2},why:"Canada, Australia, Jamaica and 11 other countries share the British monarch. Andorra has two co-princes, one of them the President of France."},
+ {id:"b-france",diff:"m",text:"Name a country that shares a land border with France.",list:L("andorra belgium brazil germany italy luxembourg monaco netherlands spain suriname switzerland"),fame:{brazil:2,netherlands:2,suriname:1},why:"France borders Brazil and Suriname through French Guiana, and the Netherlands on the Caribbean island of Saint Martin."},
+ {id:"b-china",diff:"e",text:"Name a country that borders China.",list:L("afghanistan bhutan india kazakhstan kyrgyzstan laos mongolia myanmar nepal northkorea pakistan russia tajikistan vietnam"),why:"China ties Russia for the most neighbors: 14. Afghanistan touches it through the narrow Wakhan Corridor."},
+ {id:"b-russia",diff:"e",text:"Name a country that borders Russia.",list:L("norway finland estonia latvia lithuania poland belarus ukraine georgia azerbaijan kazakhstan china mongolia northkorea"),why:"Lithuania and Poland border Russia through Kaliningrad."},
+ {id:"b-brazil",diff:"m",text:"Name a country that borders Brazil.",list:L("argentina bolivia colombia france guyana paraguay peru suriname uruguay venezuela"),fame:{france:2},why:"Every South American country except Chile and Ecuador touches Brazil. So does France, through French Guiana."},
+ {id:"b-germany",diff:"e",why:"Germany has 9 neighbors, the most of any country that sits entirely in Europe. Family reunions are a lot.",text:"Name a country that borders Germany.",list:L("denmark poland czechia austria switzerland france luxembourg belgium netherlands")},
+ {id:"b-drc",diff:"h",text:"Name a country that borders DR Congo.",list:L("angola burundi car congo rwanda southsudan tanzania uganda zambia"),why:"DR Congo touches Tanzania across Lake Tanganyika."},
+ {id:"b-austria",diff:"m",why:"Austria has no coastline but once had a navy, back when it ruled the coast of what's now Croatia.",text:"Name a country that borders Austria.",list:L("germany czechia slovakia hungary slovenia italy switzerland liechtenstein")},
+ {id:"spanish",diff:"e",text:"Name a country where Spanish is an official language.",list:L("argentina bolivia chile colombia costarica cuba dominicanrep ecuador elsalvador eqguinea guatemala honduras mexico nicaragua panama paraguay peru spain uruguay venezuela"),why:"Equatorial Guinea is the only country in Africa with Spanish as an official language."},
+ {id:"portuguese",diff:"m",text:"Name a country where Portuguese is an official language.",list:L("portugal brazil angola mozambique capeverde guineabissau saotome timor eqguinea"),why:"Equatorial Guinea added Portuguese as an official language in 2010."},
+ {id:"s-america",diff:"e",why:"Suriname is the only country in South America where Dutch is the official language.",text:"Name a country in South America.",test:c=>c.cont.includes("SA")},
+ {id:"oceania",diff:"e",why:"Kiribati spans all four hemispheres and is one of the first places on Earth to start each new day.",text:"Name a country in Oceania.",test:c=>c.cont.includes("OC")},
+ {id:"caribbean",diff:"m",why:"The Bahamas has around 700 islands, and only about 30 of them have anyone living on them.",text:"Name an island country in the Caribbean.",list:L("antigua bahamas barbados cuba dominica dominicanrep grenada haiti jamaica stkitts stlucia stvincent trinidad")},
+ {id:"capital-name",diff:"h",text:"Name a country whose capital has the country's name in it. Mexico doesn't count.",list:L("guatemala panama kuwait singapore djibouti luxembourg monaco sanmarino vatican andorra saotome"),why:"Andorra la Vella and São Tomé are the sneaky ones."},
+ {id:"100m",diff:"e",why:"These 16 countries hold roughly 70% of everyone on Earth. Good luck finding parking.",text:"Name a country with more than 100 million people.",list:L("china india usa indonesia pakistan nigeria brazil bangladesh russia ethiopia mexico japan egypt philippines drc vietnam"),fame:{china:13,india:13,usa:12,brazil:9,russia:9,indonesia:8,japan:7,mexico:7,nigeria:7,pakistan:7}},
+ {id:"euro",diff:"e",text:"Name a country that uses the euro.",list:L("austria belgium bulgaria croatia cyprus estonia finland france germany greece ireland italy latvia lithuania luxembourg malta netherlands portugal slovakia slovenia spain andorra monaco sanmarino vatican montenegro kosovo"),fame:{france:13,germany:13,italy:12,spain:12,netherlands:9,portugal:9,greece:9,ireland:8,belgium:8,austria:8},why:"Montenegro and Kosovo use the euro without being in the EU. Bulgaria switched in January 2026."},
+ {id:"olympics",diff:"m",text:"Name a country that has hosted the Summer Olympics.",list:L("greece france usa uk sweden belgium netherlands germany finland australia italy japan mexico canada russia southkorea spain china brazil"),fame:{greece:13,usa:12,china:12,uk:11,france:11,brazil:10,japan:10,australia:9,germany:7,italy:7,spain:6,canada:5,mexico:5,russia:5,southkorea:5,belgium:2,netherlands:2,finland:2,sweden:2},why:"Russia counts for Moscow 1980, held when it was part of the Soviet Union."},
+ {id:"stan",diff:"e",why:"-stan comes from a Persian word for 'place of', so Afghanistan is roughly 'land of the Afghans'.",text:"Name a country whose name ends in -stan.",test:c=>c.key.endsWith("stan")},
+ {id:"land",diff:"e",why:"Finland calls itself Suomi, so it's only Finland to the rest of us.",text:"Name a country whose name ends in -land.",test:c=>c.key.endsWith("land")},
+ {id:"z",diff:"e",why:"Zambia and Zimbabwe, the only countries that start with Z, are next-door neighbors and share Victoria Falls.",text:"Name a country with the letter Z in its name.",test:c=>c.key.includes("z")},
+ {id:"same-letter",diff:"m",why:"Countries that start and end with A are weirdly common: Albania, Algeria, Andorra, Angola, Argentina, Armenia, Australia, Austria.",text:"Name a country whose name starts and ends with the same letter.",test:c=>c.key[0]===c.key[c.key.length-1]},
+ {id:"short",diff:"m",why:"Togo's capital, Lomé, is also four letters. Very efficient country.",text:"Name a country whose name is four letters or fewer.",test:c=>c.key.length<=4},
+ {id:"no-a",diff:"e",why:"Without the letter A, Mexico, Peru and Chile end up carrying the whole team.",text:"Name a country with no letter A in its name.",test:c=>!c.key.includes("a")},
+ {id:"double",diff:"h",why:"Mississippi would crush this prompt. Sadly it's a state.",text:"Name a country with a double letter in its name. Greece doesn't count.",test:c=>/(.)\1/.test(c.key)&&c.id!=="greece"},
+ {id:"m-africa",diff:"m",why:"Mauritius is the one everyone forgets. It's also where the dodo lived, and they forgot about the dodo too.",text:"Name an African country that starts with M.",test:c=>c.cont.includes("AF")&&c.key[0]==="m"},
+ {id:"long",diff:"e",why:"The UK's full official name, the United Kingdom of Great Britain and Northern Ireland, is 45 letters long.",text:"Name a country with 12 or more letters in its name.",note:"Spaces and hyphens don't count.",test:c=>c.key.length>=12},
+ {id:"mediterranean",diff:"e",text:"Name a country with a Mediterranean coastline.",list:L("spain france monaco italy malta slovenia croatia bosnia montenegro albania greece turkey cyprus syria lebanon israel palestine egypt libya tunisia algeria morocco"),fame:{italy:12,greece:12,spain:11,france:10},why:"Palestine counts through Gaza, and Bosnia and Herzegovina has about 20 km of coast at Neum."},
+ {id:"middle-east",diff:"e",text:"Name a country in the Middle East.",list:L("bahrain cyprus egypt iran iraq israel jordan kuwait lebanon oman palestine qatar saudi syria turkey uae yemen"),fame:{saudi:11,iran:10,iraq:10,israel:10,egypt:9},why:"Definitions vary. Here it means the countries of Western Asia plus Egypt."},
 ];
 const PMAP=Object.fromEntries(PROMPTS.map(p=>[p.id,p]));
 PROMPTS.forEach(p=>{p.valid=p.list?p.list.filter(id=>C[id]):LIST.filter(p.test).map(c=>c.id); p.validSet=new Set(p.valid);});
@@ -522,6 +556,8 @@ const TIERS=[
  {name:"Terra Incognita",short:"Terra Inc.",pts:100,min:0,emoji:"⭐",tc:"--t5",d:"<1%"},
 ];
 const tierFor=p=>TIERS.findIndex(t=>p>=t.min);
+function tierScale(p){const v=Object.values(p).sort((x,y)=>x-y),mx=v[v.length-1],mn=v[Math.max(0,Math.round(v.length*.1)-1)],span=Math.max(Math.log(mx/mn),Math.log(1.5));
+  return x=>Math.max(0,Math.min(5,Math.floor(Math.log(mx/x)/span*6*0.9999)));}
 const K=20; // the starting estimate counts as this many imaginary players
 let crowd={}, board=[], crowdPlayers=0, crowdState="off";
 function estimate(pr,mine,useCrowd){
@@ -543,7 +579,12 @@ const dkey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const TODAY=dkey(now);
 const PNUM=Math.max(1,Math.round((Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())-Date.UTC(2026,10,23))/864e5)+1);
 const PER=5, CYCLE=Math.floor(PROMPTS.length/PER);
-function dailySet(n){const idx=n-1,cyc=Math.floor(idx/CYCLE),pos=idx%CYCLE,bank=cyc===0?PROMPTS.slice(0,32):PROMPTS;return shuffle(bank.map(p=>p.id),mulberry(cyc*7919+101)).slice(pos*PER,pos*PER+PER);}
+function dailySet(n){const idx=n-1,cyc=Math.floor(idx/CYCLE),pos=idx%CYCLE;
+  if(cyc===0)return shuffle(PROMPTS.slice(0,32).map(p=>p.id),mulberry(101)).slice(pos*PER,pos*PER+PER); // puzzles 1-6, unchanged
+  const pool=d=>shuffle(PROMPTS.filter(p=>p.diff===d).map(p=>p.id),mulberry(cyc*7919+(d==="e"?1:d==="m"?2:3)));
+  const E=pool("e"),M=pool("m"),H=pool("h"),at=(a,i)=>a[i%a.length];
+  return [at(E,pos*2),at(E,pos*2+1),at(M,pos*2),at(M,pos*2+1),at(H,pos)];}
+const DIFF_NAME={e:"Easy",m:"Medium",h:"Hard"};
 const TODAY_SET=dailySet(PNUM);
 const DATE_LABEL=now.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
 
@@ -780,6 +821,15 @@ function renderFoot(){
   $("foot").textContent=msg;
 }
 $("btn-home").addEventListener("click",()=>renderStart());
+$("help-tiers").replaceChildren(...TIERS.map((t,i)=>h("li",{style:`--tc:var(${t.tc})`},h("i",{class:"dot"}),h("b",null,t.name),h("span",null,`${t.pts} pts${i===0?" · most common":i===5?" · rarest":""}`))));
+function openHelp(){const d=$("help");if(d.open)return;try{d.showModal()}catch(e){d.setAttribute("open","")}}
+function closeHelp(){const d=$("help");try{d.close()}catch(e){d.removeAttribute("open")}try{localStorage.setItem("rare-earth:seen-help","1")}catch(e){}}
+$("btn-help").addEventListener("click",openHelp);
+$("help-close").addEventListener("click",closeHelp);
+$("help-go").addEventListener("click",closeHelp);
+$("help").addEventListener("click",e=>{if(e.target===$("help"))closeHelp()});
+$("help").addEventListener("close",()=>{try{localStorage.setItem("rare-earth:seen-help","1")}catch(e){}});
+setTimeout(()=>{let seen=false;try{seen=!!localStorage.getItem("rare-earth:seen-help")}catch(e){}if(!seen)openHelp()},600);
 $("btn-passport").addEventListener("click",()=>{if(S.screen==="passport")renderStart();else renderPassport();});
 function pips(set,cur){return h("div",{class:"pips","aria-hidden":"true"},set.map((pid,i)=>{const a=answers()[pid];return h("i",{class:a?"done":i===cur?"now":"",style:a?tv(a.t):""})}));}
 
@@ -808,9 +858,7 @@ function renderStart(quiet){
     h("p",{class:"lede"},"Five prompts, thirty seconds each. Any country that fits scores points, but the fewer players who give the same answer, the more it's worth."),
     today,
     st?h("p",{class:"status",style:"margin:0"},done?`${st}-day streak. See you tomorrow.`:`${st}-day streak. Play today to keep it alive.`):null,
-    h("div",{class:"legend"},h("div",{class:"legend-in"},h("h3",null,"Legend"),
-      h("ul",null,TIERS.map(t=>h("li",{style:`--tc:var(${t.tc})`},h("i"),h("b",null,t.name),h("span",null,`${t.pts} pts · ${t.d}`)))),
-      h("p",null,"Percentages are the share of today's players who gave the same answer."))),
+    h("button",{class:"linkish",onclick:()=>openHelp()},"How to play and what the colors mean"),
     h("section",{style:"display:flex;flex-direction:column;gap:10px"},h("h2",{class:"section-h"},"Archive"),
       rows.length?h("div",{class:"arch-list"},rows):h("p",{class:"empty"},"Every daily puzzle stays playable here after its day ends. Archive games don't count toward your streak."))
   );
@@ -851,7 +899,7 @@ function renderPlay(){
     else if(e.key==="Escape"){sugg=[];drawSugg();}
   });
   setScreen("play",h("div",{class:"card enter"},
-    h("div",{class:"row-between"},h("span",{class:"eyebrow"},`${modeTag()}Prompt ${S.i+1} of ${S.set.length}`),pips(S.set,S.i)),
+    h("div",{class:"row-between"},h("span",{class:"eyebrow"},`${modeTag()}Prompt ${S.i+1} of ${S.set.length}${pr.diff?" · "+DIFF_NAME[pr.diff]:""}`),pips(S.set,S.i)),
     h("h2",{class:"prompt"},pr.text),
     pr.note?h("p",{class:"note"},pr.note):null,
     h("div",{class:"timer"},track,secs),
@@ -872,7 +920,7 @@ function renderPlay(){
     if(S.screen!=="play")return;stopTimer();
     const valid=!!cid&&pr.validSet.has(cid);
     const est=estimate(pr,null,!S.practice); // your own answer doesn't count toward its own rarity
-    const p=valid?est.p[cid]:null,ti=valid?tierFor(p):-1;
+    const tf=tierScale(est.p),p=valid?est.p[cid]:null,ti=valid?tf(p):-1;
     const isNew=!S.practice&&valid&&PROF.stamps[cid]==null;
     if(!S.practice)S.daily.open=null;
     answers()[pr.id]={c:cid,p,t:ti,pts:valid?TIERS[ti].pts:0,n:isNew,to:!!timedOut&&!cid};
@@ -889,9 +937,9 @@ function suggest(q){const n=norm(q);if(!n)return[];const out=[];
 /* ---------- reveal ---------- */
 function renderReveal(){
   const pr=PMAP[S.set[S.i]],a=answers()[pr.id],ep=S.epoch+1;
-  const est=estimate(pr,null,!S.practice).p;
+  const est=estimate(pr,null,!S.practice).p,tf=tierScale(est);
   const ranked=pr.valid.slice().sort((x,y)=>est[y]-est[x]);
-  const chip=(id,showPct)=>h("span",{class:"chip"+(id===a.c?" me":""),style:tv(tierFor(est[id]))},h("i",{class:"dot"}),C[id].name,showPct?h("em",null,pct(est[id])):null);
+  const chip=(id,showPct)=>h("span",{class:"chip"+(id===a.c?" me":""),style:tv(tf(est[id]))},h("i",{class:"dot"}),C[id].name,showPct?h("em",null,pct(est[id])):null);
   const common=ranked.slice(0,3),rare=ranked.filter(id=>id!==a.c).slice(-4).reverse();
   const last=S.i===S.set.length-1;
   const segs=TIERS.map(t=>h("i",{class:"seg",style:`--tc:var(${t.tc})`}));
@@ -910,13 +958,13 @@ function renderReveal(){
     h("div",{class:"row-between"},h("span",{class:"eyebrow"},`${modeTag()}Prompt ${S.i+1} of ${S.set.length}`),pips(S.set,-1)),
     h("h2",{class:"prompt small"},pr.text),
     h("div",{class:"said"},a.c?h("span",null,"You said ",h("b",null,C[a.c].name)):"Time ran out"),
-    h("div",null,meter,h("div",{class:"meter-labels"},h("span",null,"Common"),h("span",null,"Rare"))),
+    h("div",null,meter,h("div",{class:"meter-labels"},h("span",null,"Common"),h("span",null,"Rare")),h("div",{class:"tierkey"},TIERS.map(t=>h("span",{style:`--tc:var(${t.tc})`},h("i",{class:"dot"}),t.name)))),
     h("div",{class:"verdict"},h("div",null,tierEl,shareEl),ptsEl),
     stampEl,later));
   // globe: every country that fits lights up in its rarity color
   setStage("md","Every country that fits is colored by rarity. Point at or tap one to see how rare it was.");GL.dim=0;sfx.spin();
-  GL.colorOf=id=>{if(id===a.c&&a.t<0)return COL.miss;if(!pr.validSet.has(id))return null;return COL.t[tierFor(est[id])]};
-  GL.info=id=>pr.validSet.has(id)?{text:`${TIERS[tierFor(est[id])].name} · ${pct(est[id])}`,style:tv(tierFor(est[id]))}:{text:"Doesn't fit"};
+  GL.colorOf=id=>{if(id===a.c&&a.t<0)return COL.miss;if(!pr.validSet.has(id))return null;return COL.t[tf(est[id])]};
+  GL.info=id=>pr.validSet.has(id)?{text:`${TIERS[tf(est[id])].name} · ${pct(est[id])}`,style:tv(tf(est[id]))}:{text:"Doesn't fit"};
   const focus=a.c&&GL.cent[a.c]?a.c:ranked[0];
   GL.hl=focus;GL.hlColor=a.c?(a.t>=0?COL.t[a.t]:COL.miss):COL.ink;flyTo(focus);
   (async()=>{
