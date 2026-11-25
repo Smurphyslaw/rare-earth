@@ -49,6 +49,9 @@ button{font:inherit;color:inherit}
 .stage{position:relative;width:min(470px,100%);margin:4px auto 0;transition:width .6s cubic-bezier(.3,.75,.2,1)}
 .stage[data-size="md"]{width:min(440px,94vw)}
 .stage[data-size="sm"]{width:min(200px,50vw)}
+.stage[data-size="play"]{width:min(200px,50vw)}
+.stage[data-size="play"] .zoom{display:none}
+body.typing .wrap{padding-bottom:75vh}
 #globe{width:100%;aspect-ratio:1;max-width:100%;display:block;touch-action:pan-y;cursor:grab}
 #globe:active{cursor:grabbing}
 .tip{position:absolute;z-index:5;transform:translate(-50%,calc(-100% - 12px));background:var(--paper);color:var(--edge);border-radius:6px;padding:6px 10px;font-size:14px;white-space:nowrap;pointer-events:none}
@@ -233,6 +236,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .credit{margin:6px 0 0;padding-top:14px;border-top:2px solid var(--line);font-size:13.5px;color:var(--muted)}
 .credit b{color:var(--paper);font-stretch:125%;font-weight:900;letter-spacing:.04em}
 @media (max-width:520px){
+  .stage[data-size="play"]{width:0;height:0;margin:0;overflow:hidden}
   .stage[data-size="md"]{width:min(250px,66vw)}
   .legend ul{grid-template-columns:1fr}
   #hud-day{display:none}
@@ -598,6 +602,7 @@ const TODAY_SET=dailySet(PNUM);
 const DATE_LABEL=now.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
 
 /* ---------- small helpers ---------- */
+const TOUCH=matchMedia("(pointer: coarse)").matches;
 const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const sleep=ms=>new Promise(r=>setTimeout(r,reduceMotion?0:ms));
 const $=id=>document.getElementById(id);
@@ -815,8 +820,8 @@ const answers=()=>S.practice?S.prac:S.daily.answers;
 const scoreOf=(set,A=answers())=>set.reduce((s,pid)=>s+(A[pid]?.pts||0),0);
 const app=$("app");
 let tourTimer=0,cdTimer=0;
-function setScreen(name,...nodes){S.screen=name;S.epoch++;GL.zoomTo=1;GL.autoSpin=false;stopTimer();clearInterval(tourTimer);clearInterval(cdTimer);S.boardEl=null;$("tip").hidden=true;
-  GL.pins=[];GL.hl=null;GL.info=null;app.replaceChildren(...nodes);renderHud();window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"});}
+function setScreen(name,...nodes){document.body.classList.remove("typing");S.screen=name;S.epoch++;GL.zoomTo=1;GL.autoSpin=false;stopTimer();clearInterval(tourTimer);clearInterval(cdTimer);S.boardEl=null;$("tip").hidden=true;
+  GL.pins=[];GL.hl=null;GL.info=null;app.replaceChildren(...nodes);renderHud();window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
 function renderHud(){
   $("hud-day").textContent=S.archive?`No. ${S.archive}`:S.practice?"Practice round":`No. ${PNUM}`;
   const st=streak(),sEl=$("hud-streak");sEl.querySelector("b").textContent=String(st);sEl.classList.toggle("hot",st>0);sEl.title=`Daily streak: ${st}`;
@@ -885,7 +890,7 @@ function stopTimer(){cancelAnimationFrame(timer.raf);timer.raf=0}
 const SECS=30;
 function renderPlay(){
   const pr=PMAP[S.set[S.i]];
-  const input=h("input",{id:"guess",type:"text",autocomplete:"off",autocapitalize:"off",spellcheck:"false",placeholder:"Type a country…","aria-label":"Your answer","aria-autocomplete":"list","aria-controls":"sugg"});
+  const input=h("input",{id:"guess",name:"re-answer-"+Date.now(),type:"text",autocomplete:"off",autocorrect:"off",autocapitalize:"off",spellcheck:"false",enterkeyhint:"go",placeholder:"Your answer…","aria-label":"Your answer","aria-autocomplete":"list","aria-controls":"sugg","data-lpignore":"true","data-1p-ignore":"true","data-form-type":"other"});
   const list=h("ul",{class:"sugg",id:"sugg",role:"listbox",hidden:true});
   const err=h("p",{class:"err",role:"alert"});
   const bar=h("i"),track=h("div",{class:"track"},bar),secs=h("span",{class:"secs"},String(SECS));
@@ -896,7 +901,7 @@ function renderPlay(){
     pr.valid.forEach(id=>{const k=C[id].cont[0];by[k]=(by[k]||0)+1});
     const parts=Object.entries(by).sort((x,y)=>y[1]-x[1]).map(([k,n])=>`${CN[k]} (${n})`);
     const list=parts.length>1?parts.slice(0,-1).join(", ")+" and "+parts[parts.length-1]:parts[0];
-    hintOut.textContent=`${pr.valid.length} countries fit, in ${list}.`;hintOut.hidden=false;hintBtn.hidden=true;input.focus({preventScroll:true});}},"Hint");
+    hintOut.textContent=`${pr.valid.length} countries fit, in ${list}.`;hintOut.hidden=false;hintBtn.hidden=true;if(!TOUCH)input.focus({preventScroll:true});}},"Hint");
   const drawSugg=()=>{list.replaceChildren(...sugg.map((s,i)=>h("li",null,h("button",{type:"button",role:"option","aria-selected":String(i===hl),onmousedown:e=>e.preventDefault(),onclick:()=>submit(s.id)},h("span",null,C[s.id].name),s.via?h("small",null,s.via):null))));list.hidden=!sugg.length;};
   input.addEventListener("input",()=>{err.textContent="";sugg=suggest(input.value);hl=0;drawSugg();if(!sugg.length){const t=territoryNote(input.value);if(t)err.textContent=t;}});
   input.addEventListener("keydown",e=>{
@@ -915,8 +920,9 @@ function renderPlay(){
     h("div",{class:"field"},input,list),err,
     h("div",{class:"hint-row"},h("p",{class:"hint"},"One answer only. Pick from the list or press Enter."),hintBtn),
     hintOut));
-  setStage("sm",false);GL.dim=1;GL.spin=true;GL.speed=.014;GL.colorOf=()=>null;
-  input.focus({preventScroll:true});
+  setStage("play",false);GL.dim=1;GL.spin=true;GL.speed=.014;GL.colorOf=()=>null;
+  if(!TOUCH)input.focus({preventScroll:true});
+  input.addEventListener("focus",()=>{if(!TOUCH)return;document.body.classList.add("typing");setTimeout(()=>{const p=input.closest(".card")?.querySelector(".prompt");if(p)window.scrollTo({top:Math.max(0,p.getBoundingClientRect().top+window.scrollY-10),behavior:"auto"});},250);});
   let left0=SECS*1000;
   if(!S.practice){const o=S.daily.open;if(o&&o.p===pr.id&&o.end>0)left0=Math.max(0,o.end-Date.now());else{S.daily.open={p:pr.id,end:Date.now()+SECS*1000};saveLocal();}}
   timer.end=performance.now()+left0;let lastSec=Math.ceil(left0/1000);
@@ -941,7 +947,7 @@ function renderPlay(){
 }
 function suggest(q){const n=norm(q);if(!n)return[];const out=[];
   for(const c of LIST){let best=9,via=null;c.search.forEach((s,i)=>{const r=s.startsWith(n)?0:s.split(" ").some(w=>w.startsWith(n))?1:(n.length>=3&&s.includes(n))?2:9;if(r<best){best=r;via=i===0?null:c.aliases[i-1]}});if(best<9)out.push({id:c.id,r:best,via})}
-  return out.sort((a,b)=>a.r-b.r||C[a.id].name.localeCompare(C[b.id].name)).slice(0,6);}
+  return out.sort((a,b)=>a.r-b.r||C[a.id].name.localeCompare(C[b.id].name)).slice(0,TOUCH?4:6);}
 
 /* ---------- reveal ---------- */
 function renderReveal(){
