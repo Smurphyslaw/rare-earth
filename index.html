@@ -134,6 +134,8 @@ button.mark:disabled{cursor:default}
 .sugg button[aria-selected="true"],.sugg button:hover{background:var(--paper);color:var(--edge)}
 .err{color:var(--red);font-size:14px;margin:0}
 .err:empty{display:none}
+.err.gold{color:var(--t5);font-weight:700}
+.stamp.murph{margin:4px 0 2px 6px}
 .hint{font-size:13.5px;color:var(--muted);margin:0}
 .hint-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .hint-out{margin:0;font-size:15px;font-weight:600;color:var(--t5)}
@@ -903,11 +905,11 @@ function renderPlay(){
     const list=parts.length>1?parts.slice(0,-1).join(", ")+" and "+parts[parts.length-1]:parts[0];
     hintOut.textContent=`${pr.valid.length} countries fit, in ${list}.`;hintOut.hidden=false;hintBtn.hidden=true;if(!TOUCH)input.focus({preventScroll:true});}},"Hint");
   const drawSugg=()=>{list.replaceChildren(...sugg.map((s,i)=>h("li",null,h("button",{type:"button",role:"option","aria-selected":String(i===hl),onmousedown:e=>e.preventDefault(),onclick:()=>submit(s.id)},h("span",null,C[s.id].name),s.via?h("small",null,s.via):null))));list.hidden=!sugg.length;};
-  input.addEventListener("input",()=>{err.textContent="";sugg=suggest(input.value);hl=0;drawSugg();if(!sugg.length){const t=territoryNote(input.value);if(t)err.textContent=t;}});
+  input.addEventListener("input",()=>{err.textContent="";err.classList.remove("gold");sugg=suggest(input.value);hl=0;drawSugg();if(!sugg.length){const t=territoryNote(input.value);if(t)err.textContent=t;}});
   input.addEventListener("keydown",e=>{
     if(e.key==="ArrowDown"&&sugg.length){hl=(hl+1)%sugg.length;drawSugg();e.preventDefault();}
     else if(e.key==="ArrowUp"&&sugg.length){hl=(hl-1+sugg.length)%sugg.length;drawSugg();e.preventDefault();}
-    else if(e.key==="Enter"){e.preventDefault();const exact=LOOKUP.get(norm(input.value));
+    else if(e.key==="Enter"){e.preventDefault();if(norm(input.value)==="murph"){stampMurph(err,input);sugg=[];drawSugg();return;}const exact=LOOKUP.get(norm(input.value));
       if(exact)submit(exact);else if(sugg.length&&norm(input.value).length>=2)submit(sugg[hl].id);
       else if(input.value.trim())err.textContent=territoryNote(input.value)||"That doesn't match a country. Check the spelling or pick one from the list.";}
     else if(e.key==="Escape"){sugg=[];drawSugg();}
@@ -945,6 +947,9 @@ function renderPlay(){
     saveLocal();pushDay();renderReveal();
   }
 }
+const hasMurph=()=>{try{return !!localStorage.getItem("rare-earth:murph")}catch(e){return false}};
+function stampMurph(err,input){const first=!hasMurph();try{localStorage.setItem("rare-earth:murph","1")}catch(e){}
+  sfx.stamp();err.classList.add("gold");err.textContent=first?"Murph isn't on any map. Stamped in your passport anyway.":"Murph is already in your passport. Now name a real country.";input.value="";}
 function suggest(q){const n=norm(q);if(!n)return[];const out=[];
   for(const c of LIST){let best=9,via=null;c.search.forEach((s,i)=>{const r=s.startsWith(n)?0:s.split(" ").some(w=>w.startsWith(n))?1:(n.length>=3&&s.includes(n))?2:9;if(r<best){best=r;via=i===0?null:c.aliases[i-1]}});if(best<9)out.push({id:c.id,r:best,via})}
   return out.sort((a,b)=>a.r-b.r||C[a.id].name.localeCompare(C[b.id].name)).slice(0,TOUCH?4:6);}
@@ -1078,6 +1083,7 @@ function renderPassport(){
       h("span",null,h("b",null,String(bestScore())),"best"),
       h("span",null,h("b",null,String(played())),played()===1?"day played":"days played"),
       h("span",null,h("b",null,String(Object.values(PROF.stamps).filter(t=>t>=4).length)),"rare finds")),
+    hasMurph()?h("div",{class:"stamp murph",style:tv(5)},"Murph · Not on any map"):null,
     flat,
     n?h("p",{class:"hint"},"Every country you name in a daily puzzle gets stamped in the color of the rarest tier you've earned with it."):h("p",{class:"empty"},"Play today's puzzle to stamp your first country. Each stamp keeps the rarest tier you've earned with that country."),
     ...groups,
