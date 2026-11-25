@@ -340,12 +340,24 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pp-album{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:14px;justify-items:center}
 .pp-seal{background:none;border:0;padding:0;color:#285180;cursor:pointer;transform:rotate(-4deg)}
 .pp-seal:nth-child(2n){transform:rotate(3deg);color:#22664D}.pp-seal:nth-child(3n){color:var(--pp-brass)}
-.pp-postcard{position:relative;width:min(300px,100%);aspect-ratio:1.35;margin:0 auto;border:1px solid var(--pp-rule);background:#F6EDDC;box-shadow:3px 3px #D6CAB5;border-radius:3px;cursor:pointer;perspective:900px;padding:0;color:var(--pp-ink);font:inherit}
-.pp-front,.pp-back{position:absolute;inset:0;display:grid;place-items:center;backface-visibility:hidden;transition:transform .55s cubic-bezier(.3,.7,.2,1);padding:16px}
+/* postcard flip: one card that turns over (works in iOS Safari: perspective on the parent, preserve-3d on the turning layer) */
+.pp-postcard{position:relative;width:min(300px,100%);aspect-ratio:1.35;margin:0 auto;cursor:pointer;perspective:1000px;-webkit-perspective:1000px;color:var(--pp-ink);-webkit-tap-highlight-color:transparent;outline-offset:4px}
+.pp-flip{position:absolute;inset:0;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.2,1)}
+.pp-postcard.flipped .pp-flip{transform:rotateY(180deg)}
+.pp-front,.pp-back{position:absolute;inset:0;display:grid;place-items:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--pp-rule);background:#F6EDDC;box-shadow:3px 3px #D6CAB5;border-radius:3px;padding:16px}
 .pp-front{color:#285180}
-.pp-back{transform:rotateY(180deg);align-content:start;gap:10px;text-align:left;border-left:3px solid var(--pp-brass);margin:14px;padding:6px 12px}
+.pp-front svg{width:min(170px,62%);height:auto}
+.pp-back{transform:rotateY(180deg);align-content:start;justify-items:start;gap:10px;text-align:left;padding:18px 20px;border-left:3px solid var(--pp-brass)}
 .pp-back p{margin:0;color:var(--pp-muted);line-height:1.45;font-size:14.5px}.pp-back .pp-by{font-weight:800;color:var(--pp-brass)}
-.pp-postcard.flipped .pp-front{transform:rotateY(180deg)}.pp-postcard.flipped .pp-back{transform:rotateY(360deg)}
+.pp-back .pp-over{width:100%}
+/* landmark sets */
+.pp-sets{display:flex;flex-direction:column;gap:16px}
+.pp-set-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--pp-rule);padding-bottom:6px;margin-bottom:10px}
+.pp-set-h b{font-weight:850;font-size:15.5px}.pp-set-h em{font-style:normal;font-weight:800;font-variant-numeric:tabular-nums;color:var(--pp-muted)}
+.pp-album{grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:12px}
+.pp-empty{width:84px;height:84px;border:2px dashed #B9AF9B;border-radius:50%;display:grid;place-items:center;color:#B9AF9B!important;transform:none!important}
+.pp-empty i{font-style:normal;font-stretch:125%;font-weight:900;font-size:24px}
+.pp-return{margin-top:4px}
 /* reveal strip + goal line */
 .pp-strip{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .pp-stamp{display:inline-flex;align-items:center;gap:10px;color:var(--stamp,var(--t1));border:3px double currentColor;padding:6px 10px;font-stretch:112%;font-weight:900;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;transform:rotate(-2deg);background:none;font-family:inherit}
@@ -355,7 +367,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pp-stamp.pp-card b{display:block;font-size:14px}.pp-stamp.pp-card small{display:block;font-weight:600;color:var(--muted);font-size:12px}
 .pp-goal{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel-2);font-size:14.5px;color:var(--muted)}
 .pp-goal b{color:var(--paper);font-weight:850}
-@media (prefers-reduced-motion:reduce){.pp-front,.pp-back{transition:none}}
+@media (prefers-reduced-motion:reduce){.pp-flip{transition:none}}
 @media (pointer:coarse){.icon-btn{min-width:44px;min-height:44px}#hint{min-height:44px}}
 </style>
 </head>
@@ -1489,6 +1501,10 @@ sfx.stamp=()=>{if(!SND.on)return;if(STAMP_SND){try{const a=STAMP_SND.cloneNode()
 
 const cardKey=q=>{const r=q.clues.at(-1).rule;return r.field+":"+r.value;};
 const cardKind=f=>f==="lakes"?"lake":f==="equator"||f==="tropicCancer"||f==="tropicCapricorn"?"line":f==="rivers"||f==="capitalRivers"?"river":f==="sharedIslands"?"island":f==="enclosedBy"?"inside":f==="mountainRanges"?"peaks":"sea";
+// every landmark the schedule can award, grouped into sets for the postcard album
+const SET_ORDER=["lake","line","river","island","inside","peaks","sea"];
+const SET_NAME={lake:"Lakes",line:"Lines on the map",river:"Rivers",island:"Shared islands",inside:"Countries inside countries",peaks:"Mountain ranges",sea:"Seas"};
+const ALL_CARDS=(()=>{const m=new Map();for(const d of LADDER.days)for(const q of d.puzzles){const k=cardKey(q);if(!m.has(k))m.set(k,{key:k,kind:cardKind(q.clues.at(-1).rule.field)});}return[...m.values()];})();
 const stampedIn=k=>CONT_IDS[k].filter(id=>PROF.stamps[id]!=null).length;
 const goldsThisWeek=()=>{const cut=new Date(now.getFullYear(),now.getMonth(),now.getDate()-6);return Object.values(PROF.gold).filter(d=>new Date(d+"T12:00:00")>=cut).length;};
 const contOf=id=>C[id]?.cont[0]||"AF";
@@ -1507,30 +1523,39 @@ function earnPassport(q,cid,k,a){
 
 /* landmark art: a round double-ring stamp with the place drawn inside */
 function cardArt(card,size=120){
-  const ns="http://www.w3.org/2000/svg",r=size/2,inner=r*.56;
+  // drawn in a fixed 120-unit space so the art and lettering scale together and stay inside the ring
+  const ns="http://www.w3.org/2000/svg",V=120,r=60,ringIn=r-9;
+  const name=card.name.replace(/^The /,""),words=name.split(" ");
+  // one line if it fits, otherwise two lines split near the middle
+  let lines=[name];if(name.length>11&&words.length>1){let best=null;for(let i=1;i<words.length;i++){const l1=words.slice(0,i).join(" "),l2=words.slice(i).join(" ");const m=Math.max(l1.length,l2.length);if(!best||m<best.m)best={m,l:[l1,l2]};}lines=best.l;}
+  const longest=Math.max(...lines.map(l=>l.length)),lineY0=lines.length>1?83:88,lh=11;
+  // widest line must fit the chord of the inner ring at its height (approx. 0.62em per character)
+  const chord=y=>2*Math.sqrt(Math.max(0,(ringIn-4)**2-(y-r)**2));
+  const lastY=lineY0+(lines.length-1)*lh,fs_=Math.min(13,chord(lastY+3)*.9/(longest*.62));
+  const box=[[r-27,34],[r+27,lines.length>1?71:76]];
   let art="";
-  const shape=(geo)=>{if(!window.d3||!geo)return"";const p=d3.geoMercator().fitExtent([[r-inner*.78,r-inner*.6],[r+inner*.78,r+inner*.6]],geo);return `<path d="${d3.geoPath(p)(geo)}" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>`;};
+  const shape=geo=>{if(!window.d3||!geo)return"";const p=d3.geoMercator().fitExtent(box,geo);return `<path d="${d3.geoPath(p)(geo)}" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>`;};
   if(card.kind==="lake"&&LAKES[card.value])art=shape(LAKES[card.value]);
   else if((card.kind==="island"||card.kind==="inside")&&GL.ready){const ids=card.kind==="inside"?[card.value,...card.ids]:card.ids;const feats=ids.flatMap(id=>GL.byId.get(id)||[]);
-    if(feats.length){const fc={type:"FeatureCollection",features:feats};const p=d3.geoMercator().fitExtent([[r-inner*.8,r-inner*.6],[r+inner*.8,r+inner*.6]],fc),path=d3.geoPath(p);
+    if(feats.length){const p=d3.geoMercator().fitExtent(box,{type:"FeatureCollection",features:feats}),path=d3.geoPath(p);
       art=feats.map(f=>`<path d="${path(f)}" fill="currentColor" fill-opacity="${card.ids.includes(f.properties.r)?.55:.12}" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>`).join("");}}
-  if(!art){const y=r,w=inner*.85;
-    if(card.kind==="line")art=`<path d="M${r-w} ${y}H${r+w}" stroke="currentColor" stroke-width="2.4" stroke-dasharray="5 4"/><path d="M${r-w*.7} ${y-14}a${w*.9} ${w*.9} 0 0 1 ${w*1.4} 0M${r-w*.7} ${y+14}a${w*.9} ${w*.9} 0 0 0 ${w*1.4} 0" fill="none" stroke="currentColor" stroke-width="1.4"/>`;
-    else if(card.kind==="river")art=`<path d="M${r-w} ${y-10}c${w*.35} -14 ${w*.5} 14 ${w*.85} 0s${w*.5} 14 ${w*.85} 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M${r-w} ${y+8}c${w*.35} -10 ${w*.5} 10 ${w*.85} 0s${w*.5} 10 ${w*.85} 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>`;
-    else if(card.kind==="peaks")art=`<path d="M${r-w} ${y+14}l${w*.4} -26l${w*.25} 14l${w*.35} -22l${w*.4} 30l${w*.25} -10l${w*.35} 14Z" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>`;
-    else art=[-10,0,10].map(d=>`<path d="M${r-w} ${y+d}q${w/4} -7 ${w/2} 0t${w/2} 0t${w/2} 0t${w/2} 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`).join("");}
-  const name=card.name.replace(/^The /,"");
-  return `<svg xmlns="${ns}" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">
+  if(!art){const y=(box[0][1]+box[1][1])/2,x0=r-26,w=52;
+    if(card.kind==="line")art=`<path d="M${x0} ${y}h${w}" stroke="currentColor" stroke-width="2.4" stroke-dasharray="5 4"/><path d="M${x0+8} ${y-10}q${w/2-8} -12 ${w-16} 0M${x0+8} ${y+10}q${w/2-8} 12 ${w-16} 0" fill="none" stroke="currentColor" stroke-width="1.4"/>`;
+    else if(card.kind==="river")art=`<path d="M${x0} ${y-4}c${w*.17} -10 ${w*.33} 10 ${w*.5} 0s${w*.33} 10 ${w*.5} 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M${x0+6} ${y+8}c${w*.15} -7 ${w*.3} 7 ${w*.44} 0s${w*.3} 7 ${w*.44} 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>`;
+    else if(card.kind==="peaks")art=`<path d="M${x0} ${y+10}l${w*.2} -18l${w*.12} 9l${w*.18} -16l${w*.2} 22l${w*.13} -7l${w*.17} 10Z" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>`;
+    else art=[-8,0,8].map(d=>`<path d="M${x0} ${y+d}q${w/8} -5 ${w/4} 0t${w/4} 0t${w/4} 0t${w/4} 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`).join("");}
+  const esc=t=>t.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  return `<svg xmlns="${ns}" viewBox="0 0 ${V} ${V}" width="${size}" height="${size}" aria-hidden="true">
     <circle cx="${r}" cy="${r}" r="${r-3}" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="${r}" cy="${r}" r="${r-8}" fill="none" stroke="currentColor" stroke-width="1"/>
-    <path id="arc${size}" d="M${r-(r-16)} ${r}a${r-16} ${r-16} 0 0 1 ${2*(r-16)} 0" fill="none"/>
-    <text font-size="${size*.075}" font-weight="900" letter-spacing="1.5" fill="currentColor"><textPath href="#arc${size}" startOffset="50%" text-anchor="middle">LANDMARK</textPath></text>
-    ${art}<text x="${r}" y="${r+inner*.85}" font-size="${Math.min(size*.1,size*1.3/Math.max(8,name.length))}" font-weight="900" text-anchor="middle" fill="currentColor" style="font-stretch:112%">${name.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</text></svg>`;
+    <path id="pp-arc" d="M${r-42} ${r}a42 42 0 0 1 84 0" fill="none"/>
+    <text font-size="8.5" font-weight="900" letter-spacing="1.6" fill="currentColor"><textPath href="#pp-arc" startOffset="50%" text-anchor="middle">LANDMARK</textPath></text>
+    ${art}<text x="${r}" text-anchor="middle" font-size="${fs_.toFixed(1)}" font-weight="900" fill="currentColor" style="font-stretch:112%">${lines.map((l,i)=>`<tspan x="${r}" y="${lineY0+i*lh}">${esc(l)}</tspan>`).join("")}</text></svg>`;
 }
 
 /* what the reveal shows under the score */
 function passportStrip(q,a,hidden){
   const items=[];
-  if(a.card&&PROF.cards[a.card])items.push(h("button",{type:"button",class:"pp-stamp pp-card",onclick:()=>openPostcard(a.card)},h("span",{class:"pp-art",html:""}),h("span",null,h("b",null,PROF.cards[a.card].name+" postcard"),h("small",null,"Tap to read it"))));
+  if(a.card&&PROF.cards[a.card])items.push(h("button",{type:"button",class:"pp-stamp pp-card",onclick:()=>{PP_RETURN=ppFrom();openPostcard(a.card);}},h("span",{class:"pp-art",html:""}),h("span",null,h("b",null,PROF.cards[a.card].name+" postcard"),h("small",null,"Tap to read it"))));
   if(a.gold)items.push(h("span",{class:"pp-stamp pp-gold"},`${C[a.c].name} · Gold`));
   if(a.n)items.push(h("span",{class:"pp-stamp",style:"--stamp:"+COL.t[Math.max(1,a.t)]},`${C[a.c].name} added to ${CONT_NAME[a.cont]} · ${stampedIn(a.cont)}/${CONT_IDS[a.cont].length}`));
   const el=h("div",{class:"pp-strip",hidden},items);
@@ -1542,15 +1567,16 @@ function passportStrip(q,a,hidden){
 function goalLine(k){
   const g=goalsLine(k);
   return h("div",{class:"pp-goal"},h("span",null,h("b",null,`${CONT_NAME[k]} ${stampedIn(k)}/${CONT_IDS[k].length}`),g?` · ${g} ${g===1?"gold":"golds"} this week`:" · reach the top of a ladder for gold"),
-    h("button",{type:"button",class:"btn ghost small",onclick:()=>renderVisa(k)},"Open visa page"));
+    h("button",{type:"button",class:"btn ghost small",onclick:()=>{PP_RETURN=ppFrom();renderVisa(k);}},"Open visa page"));
 }
 const goalsLine=()=>goldsThisWeek();
 const origStart=renderStart;
-renderStart=function(quiet){origStart(quiet);if(S.screen!=="start")return;const at=document.querySelector(".start .today, .start .actions");if(!at||document.querySelector(".start .pp-goal"))return;
+renderStart=function(quiet){if(!quiet)PP_RETURN=null;origStart(quiet);if(S.screen!=="start")return;const at=document.querySelector(".start .today, .start .actions");if(!at||document.querySelector(".start .pp-goal"))return;
   at.after(goalLine(PROF.last?contOf(PROF.last):"AF"));};
 const origDoneL=renderDone;
 renderDone=function(){origDoneL();if(S.practice)return;const A=answers(),tally={};S.set.map(p=>A[p]).filter(a=>a&&a.n).forEach(a=>{const c=contOf(a.c);tally[c]=(tally[c]||0)+1});const best=Object.entries(tally).sort((x,y)=>y[1]-x[1])[0];const k=best?best[0]:PROF.last?contOf(PROF.last):"AF"; // the page that grew most today
-  const rows=document.querySelector(".card .rows");if(rows)rows.before(goalLine(k));};
+  const rows=document.querySelector(".card .rows");if(rows)rows.before(goalLine(k));
+  [...document.querySelectorAll(".card .actions .btn")].filter(b=>b.textContent==="Passport").forEach(b=>b.addEventListener("click",()=>{PP_RETURN={label:"Back to results",go:()=>renderDone()};},{capture:true}));};
 
 /* maps on cream paper */
 function paperMap(cv,ids,fitIds){
@@ -1565,23 +1591,33 @@ function paperMap(cv,ids,fitIds){
   for(const id in DOTS){if(ids&&!ids.includes(id))continue;const [x,y]=proj(DOTS[id])||[];if(x==null||x<0||y<0||x>w||y>hh)continue;const t=PROF.stamps[id];ctx.beginPath();ctx.arc(x,y,t!=null?3.6:1.6,0,Math.PI*2);ctx.fillStyle=t!=null?COL.t[t]:COL.land;ctx.fill();if(t!=null){ctx.strokeStyle=COL.edge;ctx.lineWidth=1.2;ctx.stroke();}}
 }
 const sect=(n,label,...kids)=>h("section",{class:"pp-sect"},h("div",{class:"pp-over"},h("span",null,label),h("span",null,String(n).padStart(2,"0"))),...kids);
+// where the passport should send you back to (the question or results you opened it from)
+let PP_RETURN=null;
+const ppFrom=()=>S.screen==="reveal"?{label:"Back to the question",go:()=>renderReveal(false)}:S.screen==="done"?{label:"Back to results",go:()=>renderDone()}:null;
+const ppBack=()=>{const r=PP_RETURN;PP_RETURN=null;r?r.go():renderStart();};
 function passportShell(title,sub,back,...body){
+  const ret=PP_RETURN?h("button",{type:"button",class:"btn wide pp-return",onclick:ppBack},PP_RETURN.label):null;
   setScreen("passport",h("div",{class:"pp-wrap enter"},
     h("div",{class:"pp-head"},h("div",null,h("div",{class:"eyebrow pp-kicker"},sub),h("h2",{class:"prompt"},title)),back),
-    h("div",{class:"pp-book"},...body)));
+    h("div",{class:"pp-book"},...body),ret));
   setStage("sm",false);GL.dim=0;GL.spin=true;GL.colorOf=id=>PROF.stamps[id]!=null?COL.t[PROF.stamps[id]]:null;
 }
 renderPassport=function(){
   const ids=Object.keys(PROF.stamps),golds=ids.filter(id=>PROF.stamps[id]===5).length,cards=Object.keys(PROF.cards);
   const cv=h("canvas",{class:"pp-map",role:"img","aria-label":`World map with ${ids.length} stamped countries`});
-  passportShell("Your passport","Rare Earth",h("button",{class:"btn ghost small",onclick:()=>renderStart()},"Close"),
+  passportShell("Your passport","Rare Earth",h("button",{class:"btn ghost small",onclick:ppBack},PP_RETURN?"Back":"Close"),
     sect(1,"Field record",h("h3",{class:"pp-h"},ids.length?"Places you've found":"No stamps yet"),cv,
       h("div",{class:"pp-counts"},h("span",null,h("b",null,String(ids.length)),"stamped"),h("span",{class:"gold"},h("b",null,String(golds)),"gold"),h("span",null,h("b",null,String(cards.length)),cards.length===1?"postcard":"postcards")),
       ids.length?null:h("p",{class:"pp-note"},"Every country that scores gets stamped on its continent's page. Reach the top of a ladder to turn it gold and earn that place's postcard.")),
     sect(2,"Visa pages",h("div",{class:"pp-visas"},CONT_ORDER.map(k=>{const n=stampedIn(k),t=CONT_IDS[k].length;
       return h("button",{type:"button",class:"pp-visa",onclick:()=>renderVisa(k)},h("b",null,CONT_NAME[k]),h("span",{class:"pp-bar"},h("i",{style:`width:${(100*n/t).toFixed(1)}%`})),h("em",null,`${n}/${t}`));}))),
-    sect(3,"Postcards",cards.length?h("div",{class:"pp-album"},cards.map(key=>{const c=PROF.cards[key];const b=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key),"aria-label":c.name+" postcard"});b.innerHTML=cardArt(c,104);return b;}))
-      :h("p",{class:"pp-note"},"Each 1,000-point answer earns the postcard for the place its ladder reveals: a lake, a line on the map, an island, a river.")));
+    sect(3,"Landmark postcards",h("p",{class:"pp-note"},"Each 1,000-point answer earns the postcard for the place its ladder ends on. Collect every lake, line, river, island and sea."),
+      h("div",{class:"pp-sets"},SET_ORDER.filter(kind=>ALL_CARDS.some(c=>c.kind===kind)||cards.some(k=>PROF.cards[k].kind===kind)).map(kind=>{
+        const all=ALL_CARDS.filter(c=>c.kind===kind).map(c=>c.key),mine=cards.filter(k=>PROF.cards[k].kind===kind),keys=[...new Set([...mine,...all])];
+        return h("div",{class:"pp-set"},h("div",{class:"pp-set-h"},h("b",null,SET_NAME[kind]),h("em",null,`${mine.length}/${keys.length}`)),
+          h("div",{class:"pp-album"},keys.map(key=>{const c=PROF.cards[key];
+            if(!c)return h("span",{class:"pp-seal pp-empty","aria-label":"Not found yet"},h("i",null,"?"));
+            const b=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key),"aria-label":c.name+" postcard"});b.innerHTML=cardArt(c,92);return b;})));}))));
   const draw=()=>paperMap(cv,null,null);const ro=new ResizeObserver(()=>{if(cv.isConnected)draw();else ro.disconnect();});ro.observe(cv);draw();
 };
 function renderVisa(k){
@@ -1595,9 +1631,11 @@ function renderVisa(k){
 }
 function openPostcard(key){
   const c=PROF.cards[key];if(!c)return;
-  const card=h("button",{type:"button",class:"pp-postcard","aria-label":"Flip the postcard"});
-  const front=h("div",{class:"pp-front"}),back=h("div",{class:"pp-back"},h("div",{class:"pp-over"},h("span",null,"Field note"),h("span",null,c.date)),h("p",null,c.note),h("p",{class:"pp-by"},`Earned with ${C[c.by]?.name||""}`));
-  front.innerHTML=cardArt(c,170);card.append(front,back);card.addEventListener("click",()=>card.classList.toggle("flipped"));
+  const card=h("div",{class:"pp-postcard",role:"button",tabindex:"0","aria-label":"Flip the postcard"});const flip=h("div",{class:"pp-flip"});
+  const front=h("div",{class:"pp-front"}),back=h("div",{class:"pp-back"},h("div",{class:"pp-over"},h("span",null,"Field note"),h("span",null,new Date(c.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}))),h("p",null,c.note),h("p",{class:"pp-by"},`Earned with ${C[c.by]?.name||""}`));
+  front.innerHTML=cardArt(c,170);flip.append(front,back);card.append(flip);
+  const turn=()=>{card.classList.toggle("flipped");if(!reduceMotion)noiseHit({dur:.12,vol:.06,freq:1400,q:.7});};
+  card.addEventListener("click",turn);card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();turn();}});
   passportShell(c.name,"Postcard",h("button",{class:"btn ghost small",onclick:()=>renderPassport()},"Album"),sect(1,"Postcard",card,h("p",{class:"pp-note",style:"text-align:center"},"Tap the card to flip it.")));
 }
 
