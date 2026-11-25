@@ -689,16 +689,17 @@ if(window.d3){GL.proj=d3.geoOrthographic().clipAngle(90).precision(.6);GL.path=d
 function visible(ll){return GL.proj&&d3.geoDistance(ll,[-GL.rot[0],-GL.rot[1]])<Math.PI/2-.03}
 function flyTo(id,dur=1500){const ll=GL.cent[id];if(!ll||!GL.proj)return;const from=GL.rot.slice();const to=[-ll[0],Math.max(-55,Math.min(55,-ll[1]))*.9,0];
   while(to[0]-from[0]>180)to[0]-=360;while(to[0]-from[0]<-180)to[0]+=360;GL.spin=false;GL.anim={start:performance.now(),dur:reduceMotion?1:dur,interp:d3.interpolate(from,to)};}
-function frame(t){
+function frame(t){try{drawFrame(t)}catch(e){try{GL.ctx.restore()}catch(_){}}requestAnimationFrame(frame);}
+function drawFrame(t){
   const dt=Math.min(64,t-(GL.last||t));GL.last=t;
   const cv=GL.cv,ctx=GL.ctx,dpr=Math.min(2,devicePixelRatio||1),w=cv.clientWidth,TAU=Math.PI*2;
-  if(w){const px=Math.round(w*dpr);if(cv.width!==px){cv.width=px;cv.height=px;}
+  if(w>=60){const px=Math.round(w*dpr);if(cv.width!==px){cv.width=px;cv.height=px;}
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,w);
     if(GL.anim){const k=Math.min(1,(t-GL.anim.start)/GL.anim.dur);GL.rot=GL.anim.interp(d3.easeCubicInOut(k));if(k>=1)GL.anim=null;}
     else if(GL.spin&&!GL.drag&&!reduceMotion)GL.rot=[GL.rot[0]+dt*GL.speed,GL.rot[1],0];
     GL.zoom+=(GL.zoomTo-GL.zoom)*(reduceMotion?1:.2);
     if(!GL.spin&&GL.autoSpin&&!GL.drag&&!GL.anim&&t-GL.lastTouch>20000)GL.spin=true;
-    const R=(w/2-14)*GL.zoom,LR=Math.min(R,w/2-14),cx=w/2-3,cy=w/2-3,flat=GL.zoom<1.05;
+    const R=Math.max(1,(w/2-14)*GL.zoom),LR=Math.max(1,Math.min(R,w/2-14)),cx=w/2-3,cy=w/2-3,flat=GL.zoom<1.05;
     // half meridian ring of a desk globe, then an offset ink shadow
     if(flat){ctx.beginPath();ctx.arc(cx,cy,R+8,Math.PI*.62,Math.PI*1.88);ctx.strokeStyle=rgba(COL.paper,.3);ctx.lineWidth=2;ctx.stroke();
     ctx.beginPath();ctx.arc(cx+7,cy+7,R,0,TAU);ctx.fillStyle=COL.shadow;ctx.fill();}
@@ -727,7 +728,6 @@ function frame(t){
     }
     ctx.beginPath();ctx.arc(cx,cy,LR,0,TAU);ctx.strokeStyle=COL.paper;ctx.lineWidth=2;ctx.stroke();
   }
-  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 function pick(e){if(!GL.ready)return null;const r=GL.cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,w=r.width,R=(w/2-14)*GL.zoom;
