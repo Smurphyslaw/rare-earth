@@ -221,6 +221,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .help-tiers li{display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}
 .help-tiers li span{color:var(--muted);font-size:12.5px}
 .help-note{margin:0;font-size:14px;color:var(--muted)}
+.shoutout{font-style:italic;margin-top:-6px}
 @media (max-width:420px){.help-tiers{grid-template-columns:1fr}}
 .credit{margin:6px 0 0;padding-top:14px;border-top:2px solid var(--line);font-size:13.5px;color:var(--muted)}
 .credit b{color:var(--paper);font-stretch:125%;font-weight:900;letter-spacing:.04em}
@@ -271,6 +272,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
   <h3 class="section-h">Streaks, passport and archive</h3>
   <p class="help-note">Play the daily puzzle on its day to build your streak. Every country you name gets stamped in your passport in its tier color. Missed a day? Past puzzles stay playable in the archive on the home page, but they don't count toward your streak.</p>
   <p class="credit">A game by <b>SMURPHYSLAW</b>. Anything that can go wrong with your geography will go wrong, usually somewhere in Central Asia.</p>
+  <p class="help-note shoutout">Made for Ern and Milla, my daily puzzle crew. If either of you beats my score, please report it as a bug.</p>
   <button class="btn wide" id="help-go">Got it</button>
 </div></dialog>
 
@@ -680,7 +682,7 @@ function frame(t){
     if(GL.anim){const k=Math.min(1,(t-GL.anim.start)/GL.anim.dur);GL.rot=GL.anim.interp(d3.easeCubicInOut(k));if(k>=1)GL.anim=null;}
     else if(GL.spin&&!GL.drag&&!reduceMotion)GL.rot=[GL.rot[0]+dt*GL.speed,GL.rot[1],0];
     GL.zoom+=(GL.zoomTo-GL.zoom)*(reduceMotion?1:.2);
-    if(!GL.spin&&GL.autoSpin&&!GL.drag&&!GL.anim&&t-GL.lastTouch>10000)GL.spin=true;
+    if(!GL.spin&&GL.autoSpin&&!GL.drag&&!GL.anim&&t-GL.lastTouch>20000)GL.spin=true;
     const R=(w/2-14)*GL.zoom,LR=Math.min(R,w/2-14),cx=w/2-3,cy=w/2-3,flat=GL.zoom<1.05;
     // half meridian ring of a desk globe, then an offset ink shadow
     if(flat){ctx.beginPath();ctx.arc(cx,cy,R+8,Math.PI*.62,Math.PI*1.88);ctx.strokeStyle=rgba(COL.paper,.3);ctx.lineWidth=2;ctx.stroke();
@@ -722,7 +724,7 @@ function showTip(hit){const tip=$("tip");if(!hit||!GL.info){tip.hidden=true;retu
   clearTimeout(showTip.t);showTip.t=setTimeout(()=>{tip.hidden=true},2600);}
 const touch=()=>{GL.lastTouch=performance.now()};
 GL.cv.addEventListener("pointerdown",e=>{touch();GL.drag={x:e.clientX,y:e.clientY,rot:GL.rot.slice(),moved:false,id:e.pointerId};GL.anim=null;});
-GL.cv.addEventListener("pointermove",e=>{const d=GL.drag;if(d||e.pointerType==="mouse")touch();
+GL.cv.addEventListener("pointermove",e=>{const d=GL.drag;if(d)touch();
   if(d){const dx=e.clientX-d.x,dy=e.clientY-d.y;if(!d.moved&&Math.abs(dx)+Math.abs(dy)>4){d.moved=true;try{GL.cv.setPointerCapture(d.id)}catch(_){}}
     if(d.moved){const s=180/(Math.PI*(GL.cv.clientWidth/2-14)*GL.zoom);GL.rot=[d.rot[0]+dx*s,Math.max(-80,Math.min(80,d.rot[1]-dy*s)),0];GL.spin=false;$("tip").hidden=true;}}
   else if(e.pointerType==="mouse")showTip(pick(e));});
@@ -985,7 +987,7 @@ function renderReveal(){
 /* ---------- results ---------- */
 function shareText(){const total=scoreOf(S.set);const sq=S.set.map(pid=>{const a=answers()[pid];return a&&a.t>=0?TIERS[a.t].emoji:"⬛"}).join("");const st=streak();
   return `Rare Earth #${PNUM} · ${total}/${S.set.length*100}\n${sq}${st>1?`\nStreak ${st}`:""}`;}
-function fillBoard(el){
+function fillBoard(el){if(el){el.hidden=crowdState!=="live";if(el.hidden)return;}
   if(!el)return;const A=S.daily.answers,mine=scoreOf(TODAY_SET,A);
   const others=board.filter(r=>r.uid!==uid);
   const rows=[...others,{uid:uid||"me",s:mine,t:Object.fromEntries(TODAY_SET.map(p=>[p,A[p]?.t??-1])),me:true}].sort((x,y)=>y.s-x.s||(x.me?-1:y.me?1:0));
@@ -1031,13 +1033,13 @@ function renderDone(){
       S.practice?null:h("button",{class:"btn ghost",onclick:()=>renderPassport()},"Passport"),copied),
     S.practice?null:h("p",{class:"status",style:"margin:0"},"Next puzzle in ",cd)));
   S.boardEl=boardEl;fillBoard(boardEl);
-  setStage("md","Your five answers. Drag to explore; it waits a few seconds after you let go.");GL.dim=0;GL.spin=false;
+  setStage("md",false);GL.dim=0;GL.spin=false;
   const ids=S.set.map(p=>A[p]).filter(a=>a&&a.c&&a.t>=0).map(a=>a.c);
   const colorMap=new Map(S.set.map(p=>A[p]).filter(a=>a&&a.c).map(a=>[a.c,a.t>=0?COL.t[a.t]:COL.miss]));
   GL.colorOf=id=>colorMap.get(id)||null;
   GL.info=id=>{const p=S.set.find(p=>A[p]?.c===id);return p?{text:A[p].t>=0?TIERS[A[p].t].name:"Doesn't fit",style:tv(A[p].t)}:null};
   GL.pins=S.set.map(p=>A[p]).filter(a=>a&&a.c).map(a=>({id:a.c,color:a.t>=0?COL.t[a.t]:COL.miss}));
-  if(ids.length){let k=0;const go=()=>{const id=ids[k++%ids.length];GL.hl=id;GL.hlColor=colorMap.get(id);flyTo(id,1300)};go();tourTimer=setInterval(()=>{if(!GL.drag&&GL.zoomTo===1&&performance.now()-GL.lastTouch>12000)go()},3500);}
+  if(ids.length){let k=0;const go=()=>{const id=ids[k++%ids.length];GL.hl=id;GL.hlColor=colorMap.get(id);flyTo(id,1100)};go();tourTimer=setInterval(()=>{if(!GL.drag&&GL.zoomTo===1&&performance.now()-GL.lastTouch>20000)go()},3000);}
   else{GL.spin=true;}
   if(!S.practice&&total>=300&&S.epoch){setTimeout(()=>{if(S.screen==="done"){const b=document.querySelector(".total .big");if(b){const r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,COL.t.slice(2).concat(COL.paper),110);sfx.chime(5);}}},350);}
   if(!S.practice){const upd=()=>{const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.max(0,Math.floor((m-n)/1000));cd.textContent=`${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}`;};upd();cdTimer=setInterval(upd,1000);}
