@@ -909,7 +909,7 @@ function renderPlay(){
   input.addEventListener("keydown",e=>{
     if(e.key==="ArrowDown"&&sugg.length){hl=(hl+1)%sugg.length;drawSugg();e.preventDefault();}
     else if(e.key==="ArrowUp"&&sugg.length){hl=(hl-1+sugg.length)%sugg.length;drawSugg();e.preventDefault();}
-    else if(e.key==="Enter"){e.preventDefault();if(norm(input.value)==="murph"){stampMurph(err,input);sugg=[];drawSugg();return;}const exact=LOOKUP.get(norm(input.value));
+    else if(e.key==="Enter"){e.preventDefault();if(norm(input.value)==="murph"){bubbyTip(pr,err,input);sugg=[];drawSugg();return;}const exact=LOOKUP.get(norm(input.value));
       if(exact)submit(exact);else if(sugg.length&&norm(input.value).length>=2)submit(sugg[hl].id);
       else if(input.value.trim())err.textContent=territoryNote(input.value)||"That doesn't match a country. Check the spelling or pick one from the list.";}
     else if(e.key==="Escape"){sugg=[];drawSugg();}
@@ -947,9 +947,14 @@ function renderPlay(){
     saveLocal();pushDay();renderReveal();
   }
 }
-const hasMurph=()=>{try{return !!localStorage.getItem("rare-earth:murph")}catch(e){return false}};
-function stampMurph(err,input){const first=!hasMurph();try{localStorage.setItem("rare-earth:murph","1")}catch(e){}
-  sfx.stamp();err.classList.add("gold");err.textContent=first?"Murph isn't on any map. Stamped in your passport anyway.":"Murph is already in your passport. Now name a real country.";input.value="";}
+// secret helper for Murph: names one correct answer from the middle tiers, the same one every time
+function bubbyTip(pr,err,input){
+  const est=estimate(pr,null,!S.practice).p,tf=tierScale(est);
+  let pool=pr.valid.filter(id=>{const t=tf(est[id]);return t>=1&&t<=3});
+  if(!pool.length)pool=pr.valid.filter(id=>tf(est[id])>0);
+  if(!pool.length)pool=pr.valid.slice();
+  pool.sort();let hh=0;for(const ch of pr.id+TODAY)hh=(hh*31+ch.charCodeAt(0))>>>0;
+  err.classList.add("gold");err.textContent=`Psst, Murph. Bubby says try ${C[pool[hh%pool.length]].name}.`;input.value="";}
 function suggest(q){const n=norm(q);if(!n)return[];const out=[];
   for(const c of LIST){let best=9,via=null;c.search.forEach((s,i)=>{const r=s.startsWith(n)?0:s.split(" ").some(w=>w.startsWith(n))?1:(n.length>=3&&s.includes(n))?2:9;if(r<best){best=r;via=i===0?null:c.aliases[i-1]}});if(best<9)out.push({id:c.id,r:best,via})}
   return out.sort((a,b)=>a.r-b.r||C[a.id].name.localeCompare(C[b.id].name)).slice(0,TOUCH?4:6);}
@@ -1083,7 +1088,6 @@ function renderPassport(){
       h("span",null,h("b",null,String(bestScore())),"best"),
       h("span",null,h("b",null,String(played())),played()===1?"day played":"days played"),
       h("span",null,h("b",null,String(Object.values(PROF.stamps).filter(t=>t>=4).length)),"rare finds")),
-    hasMurph()?h("div",{class:"stamp murph",style:tv(5)},"Murph · Not on any map"):null,
     flat,
     n?h("p",{class:"hint"},"Every country you name in a daily puzzle gets stamped in the color of the rarest tier you've earned with it."):h("p",{class:"empty"},"Play today's puzzle to stamp your first country. Each stamp keeps the rarest tier you've earned with that country."),
     ...groups,
