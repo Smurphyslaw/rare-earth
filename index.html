@@ -952,7 +952,7 @@ function renderReveal(){
     pr.why?h("p",{class:"why"},h("b",null,"Did you know? "),pr.why):null,
     h("div",{class:"group"},h("h3",null,"Most common answers"),h("div",{class:"chips"},common.map(id=>chip(id,true)))),
     h("div",{class:"group"},h("h3",null,"Rarest answers that fit"),h("div",{class:"chips"},rare.map(id=>chip(id,true)))),
-    h("details",null,h("summary",null,`All ${pr.valid.length} countries that fit`),h("div",{class:"chips"},ranked.map(id=>chip(id,false)))),
+    h("details",null,h("summary",null,`All ${pr.valid.length} countries that fit`),h("div",{class:"chips"},ranked.map(id=>chip(id,true)))),
     h("div",{class:"actions"},h("button",{class:"btn wide",id:"next",onclick:()=>{if(last)renderDone();else{S.i++;renderPlay();}}},last?"See results":"Next prompt")));
   setScreen("reveal",h("div",{class:"card enter"},
     h("div",{class:"row-between"},h("span",{class:"eyebrow"},`${modeTag()}Prompt ${S.i+1} of ${S.set.length}`),pips(S.set,-1)),
