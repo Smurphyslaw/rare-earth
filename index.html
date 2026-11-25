@@ -185,6 +185,13 @@ details .chips{margin-top:10px}
 .row .a span{font-weight:600;color:var(--tc)}
 .row .a .new{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--t5);border:1.5px solid var(--t5);border-radius:3px;padding:0 5px;margin-left:6px;vertical-align:2px}
 .row .p{font-weight:800;font-variant-numeric:tabular-nums}
+.rowd summary{list-style:none;cursor:pointer;text-decoration:none;font-weight:inherit;font-size:inherit}
+.rowd summary::-webkit-details-marker{display:none}
+.rowd .row{border-top:1.5px solid var(--line)}
+.rowd:first-child .row{border-top:0}
+.rowd[open] .row .q{color:var(--paper)}
+.row-more{padding:2px 0 14px 26px;display:flex;flex-direction:column;gap:8px}
+.row-more-h{margin:0;font-size:14px;font-weight:700;color:var(--t5)}
 .sharebox{background:var(--bg);border:2px dashed var(--line-strong);border-radius:8px;padding:14px 16px;font-family:ui-monospace,Consolas,monospace;font-size:14px;white-space:pre-wrap;margin:0;overflow-x:auto;user-select:all}
 .countdown{font-variant-numeric:tabular-nums;color:var(--paper);font-weight:800}
 .board{display:flex;flex-direction:column}
@@ -1006,9 +1013,12 @@ function fillBoard(el){if(el){el.hidden=crowdState!=="live";if(el.hidden)return;
 function renderDone(){
   const total=scoreOf(S.set),A=answers();
   const rows=S.set.map(pid=>{const pr=PMAP[pid],a=A[pid]||{t:-1,pts:0};
-    return h("div",{class:"row",style:tv(a.t)},h("span",{class:"sq"}),
+    const est=estimate(pr,null,!S.practice).p,tf=tierScale(est),ranked=pr.valid.slice().sort((x,y)=>est[y]-est[x]),best=ranked.filter(id=>tf(est[id])===5).map(id=>C[id].name);
+    return h("details",{class:"rowd"},h("summary",{class:"row",style:tv(a.t)},h("span",{class:"sq"}),
       h("div",{style:"min-width:0"},h("div",{class:"q"},pr.text),h("div",{class:"a"},a.c?C[a.c].name:"No answer"," ",h("span",null,a.t>=0?"· "+TIERS[a.t].name:a.c?"· doesn't fit":""),a.n?h("span",{class:"new"},"NEW"):null)),
-      h("span",{class:"p"},String(a.pts)));});
+      h("span",{class:"p"},String(a.pts))),
+      h("div",{class:"row-more"},h("p",{class:"row-more-h"},(best.length>1?"Best answers: ":"Best answer: ")+best.join(", ")),
+        h("div",{class:"chips"},ranked.map(id=>h("span",{class:"chip"+(id===a.c?" me":""),style:tv(tf(est[id]))},h("i",{class:"dot"}),C[id].name,h("em",null,pct(est[id])))))));});
   const box=h("pre",{class:"sharebox"},shareText());
   const copied=h("span",{class:"status",role:"status"});
   const copy=h("button",{class:"btn",onclick:()=>{const txt=shareText();const sel=()=>{const r=document.createRange();r.selectNodeContents(box);const s=getSelection();s.removeAllRanges();s.addRange(r);copied.textContent="Selected. Press Ctrl+C or ⌘C to copy.";};
@@ -1024,7 +1034,7 @@ function renderDone(){
       h("span",null,h("b",null,String(bestScore())),"best"),
       h("span",null,h("b",null,String(played())),played()===1?"day played":"days played"),
       h("span",null,h("b",null,String(stampCount())),newStamps?`stamps, ${newStamps} new today`:"stamps")),
-    h("div",{class:"rows"},rows),
+    h("p",{class:"hint"},"Tap any question to see every answer that fit."),h("div",{class:"rows"},rows),
     boardEl,
     S.practice?null:box,
     h("div",{class:"actions"},S.practice?null:copy,
