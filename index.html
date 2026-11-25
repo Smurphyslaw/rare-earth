@@ -947,11 +947,11 @@ function renderPlay(){
     saveLocal();pushDay();renderReveal();
   }
 }
-// secret helper for Murph: names one correct answer from the middle tiers, the same one every time
+// secret helper for Murph: names one correct Uncharted or Terra Incognita answer, picked per prompt
 function bubbyTip(pr,err,input){
   const est=estimate(pr,null,!S.practice).p,tf=tierScale(est);
-  let pool=pr.valid.filter(id=>{const t=tf(est[id]);return t>=1&&t<=3});
-  if(!pool.length)pool=pr.valid.filter(id=>tf(est[id])>0);
+  let pool=pr.valid.filter(id=>tf(est[id])>=4);
+  if(!pool.length)pool=pr.valid.filter(id=>tf(est[id])>=3);
   if(!pool.length)pool=pr.valid.slice();
   pool.sort();let hh=0;for(const ch of pr.id+TODAY)hh=(hh*31+ch.charCodeAt(0))>>>0;
   err.classList.add("gold");err.textContent=`Psst, Murph. Bubby says try ${C[pool[hh%pool.length]].name}.`;input.value="";}
