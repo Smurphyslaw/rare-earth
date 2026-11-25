@@ -272,7 +272,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
   <h3 class="section-h">Streaks, passport and archive</h3>
   <p class="help-note">Play the daily puzzle on its day to build your streak. Every country you name gets stamped in your passport in its tier color. Missed a day? Past puzzles stay playable in the archive on the home page, but they don't count toward your streak.</p>
   <p class="credit">A game by <b>SMURPHYSLAW</b>. Anything that can go wrong with your geography will go wrong, usually somewhere in Central Asia.</p>
-  <p class="help-note shoutout">Shout-out to Nern and Milla, my daily puzzle rivals. If either of you beats my score, please report it as a bug.</p>
+  <p class="help-note shoutout">Shoutout to Nern and Milla. If either of you beats my score, please report it as a bug.</p>
   <button class="btn wide" id="help-go">Got it</button>
 </div></dialog>
 
@@ -492,19 +492,19 @@ const TERR=new Map(Object.entries({
   "french guiana":["French Guiana","france"],"martinique":["Martinique","france"],"guadeloupe":["Guadeloupe","france"],"reunion":["Réunion","france"],"mayotte":["Mayotte","france"],"new caledonia":["New Caledonia","france"],"french polynesia":["French Polynesia","france"],"tahiti":["Tahiti","france"],"corsica":["Corsica","france"],"saint martin":["Saint Martin","france"],"saint barthelemy":["Saint Barthélemy","france"],"wallis and futuna":["Wallis and Futuna","france"],"saint pierre and miquelon":["Saint Pierre and Miquelon","france"],
   "aruba":["Aruba","netherlands"],"curacao":["Curaçao","netherlands"],"sint maarten":["Sint Maarten","netherlands"],"bonaire":["Bonaire","netherlands"],
   "bermuda":["Bermuda","uk"],"cayman islands":["The Cayman Islands","uk"],"british virgin islands":["The British Virgin Islands","uk"],"anguilla":["Anguilla","uk"],"montserrat":["Montserrat","uk"],"turks and caicos":["The Turks and Caicos Islands","uk"],"gibraltar":["Gibraltar","uk"],"falkland islands":["The Falkland Islands","uk"],"falklands":["The Falklands","uk"],"isle of man":["The Isle of Man","uk"],"jersey":["Jersey","uk"],"guernsey":["Guernsey","uk"],"saint helena":["Saint Helena","uk"],"pitcairn islands":["The Pitcairn Islands","uk"],
-  "cook islands":["The Cook Islands","newzealand","It's self-governing but linked to New Zealand, so it isn't counted separately here."],"niue":["Niue","newzealand","It's self-governing but linked to New Zealand, so it isn't counted separately here."],"tokelau":["Tokelau","newzealand"],
+  "cook islands":["The Cook Islands","newzealand","The Cook Islands govern themselves but are linked to New Zealand, so they aren't counted separately here."],"niue":["Niue","newzealand","Niue governs itself but is linked to New Zealand, so it isn't counted separately here."],"tokelau":["Tokelau","newzealand"],
   "christmas island":["Christmas Island","australia"],"norfolk island":["Norfolk Island","australia"],"cocos islands":["The Cocos Islands","australia"],
   "svalbard":["Svalbard","norway"],"aland islands":["The Åland Islands","finland"],"canary islands":["The Canary Islands","spain"],"azores":["The Azores","portugal"],"madeira":["Madeira","portugal"],
-  "somaliland":["Somaliland","somalia","It runs itself but few countries recognize it, so it counts as Somalia here."],"northern cyprus":["Northern Cyprus","cyprus","Only Türkiye recognizes it, so it counts as Cyprus here."],
-  "abkhazia":["Abkhazia","georgia","Most countries treat it as part of Georgia."],"south ossetia":["South Ossetia","georgia","Most countries treat it as part of Georgia."],"transnistria":["Transnistria","moldova","Most countries treat it as part of Moldova."],
-  "western sahara":["Western Sahara",null,"Its status is disputed, so it isn't counted as a country here."],"kurdistan":["Kurdistan",null,"It's a region that spans several countries, so it isn't counted on its own."],
-  "antarctica":["Antarctica",null,"It's a continent with no countries on it."],"europe":["Europe",null,"That's a continent. Name a country."],"africa":["Africa",null,"That's a continent. Name a country."],"asia":["Asia",null,"That's a continent. Name a country."],
-  "south america":["South America",null,"That's a continent. Name a country."],"north america":["North America",null,"That's a continent. Name a country."],"oceania":["Oceania",null,"That's a region. Name a country."]
+  "somaliland":["Somaliland","somalia","Somaliland runs itself, but few countries recognize it, so it counts as Somalia here."],"northern cyprus":["Northern Cyprus","cyprus","Only Türkiye recognizes Northern Cyprus, so it counts as Cyprus here."],
+  "abkhazia":["Abkhazia","georgia","Most countries treat Abkhazia as part of Georgia."],"south ossetia":["South Ossetia","georgia","Most countries treat South Ossetia as part of Georgia."],"transnistria":["Transnistria","moldova","Most countries treat Transnistria as part of Moldova."],
+  "western sahara":["Western Sahara",null,"Western Sahara's status is disputed, so it isn't counted as a country here."],"kurdistan":["Kurdistan",null,"Kurdistan is a region that spans several countries, so it isn't counted on its own."],
+  "antarctica":["Antarctica",null,"Antarctica is a continent with no countries on it."],"europe":["Europe",null,"Europe is a continent. Name a country in it."],"africa":["Africa",null,"Africa is a continent. Name a country in it."],"asia":["Asia",null,"Asia is a continent. Name a country in it."],
+  "south america":["South America",null,"South America is a continent. Name a country in it."],"north america":["North America",null,"North America is a continent. Name a country in it."],"oceania":["Oceania",null,"Oceania is a region. Name a country in it."]
 }).map(([k,v])=>[norm(k),v]));
 function territoryNote(q){const n=norm(q);if(n.length<3)return null;let hit=TERR.get(n);
   if(!hit&&n.length>=4)for(const [k,v] of TERR)if(k.startsWith(n)){hit=v;break}
   if(!hit)return null;const [name,parent,note]=hit;
-  if(note)return parent?`${name}: ${note} Try ${C[parent].name}.`:`${name}: ${note}`;
+  if(note)return parent?`${note} Try ${C[parent].name}.`:note;
   return `${name} is part of ${C[parent].name}, so it doesn't count on its own here. Try ${C[parent].name}.`;}
 
 /* ---------- prompts ---------- */
@@ -533,8 +533,8 @@ const PROMPTS=[
  {id:"100m",diff:"e",why:"These 16 countries hold roughly 70% of everyone on Earth. Good luck finding parking.",text:"Name a country with more than 100 million people.",list:L("china india usa indonesia pakistan nigeria brazil bangladesh russia ethiopia mexico japan egypt philippines drc vietnam"),fame:{china:13,india:13,usa:12,brazil:9,russia:9,indonesia:8,japan:7,mexico:7,nigeria:7,pakistan:7}},
  {id:"euro",diff:"e",text:"Name a country that uses the euro.",list:L("austria belgium bulgaria croatia cyprus estonia finland france germany greece ireland italy latvia lithuania luxembourg malta netherlands portugal slovakia slovenia spain andorra monaco sanmarino vatican montenegro kosovo"),fame:{france:13,germany:13,italy:12,spain:12,netherlands:9,portugal:9,greece:9,ireland:8,belgium:8,austria:8},why:"Montenegro and Kosovo use the euro without being in the EU. Bulgaria switched in January 2026."},
  {id:"olympics",diff:"m",text:"Name a country that has hosted the Summer Olympics.",list:L("greece france usa uk sweden belgium netherlands germany finland australia italy japan mexico canada russia southkorea spain china brazil"),fame:{greece:13,usa:12,china:12,uk:11,france:11,brazil:10,japan:10,australia:9,germany:7,italy:7,spain:6,canada:5,mexico:5,russia:5,southkorea:5,belgium:2,netherlands:2,finland:2,sweden:2},why:"Russia counts for Moscow 1980, held when it was part of the Soviet Union."},
- {id:"stan",diff:"e",why:"-stan comes from a Persian word for 'place of', so Afghanistan is roughly 'land of the Afghans'.",text:"Name a country whose name ends in -stan.",test:c=>c.key.endsWith("stan")},
- {id:"land",diff:"e",why:"Finland calls itself Suomi, so it's only Finland to the rest of us.",text:"Name a country whose name ends in -land.",test:c=>c.key.endsWith("land")},
+ {id:"stan",diff:"e",why:"The ending stan comes from a Persian word for 'place of', so Afghanistan is roughly 'land of the Afghans'.",text:"Name a country whose name ends in \"stan\".",test:c=>c.key.endsWith("stan")},
+ {id:"land",diff:"e",why:"Finland calls itself Suomi, so it's only Finland to the rest of us.",text:"Name a country whose name ends in \"land\".",test:c=>c.key.endsWith("land")},
  {id:"z",diff:"e",why:"Zambia and Zimbabwe, the only countries that start with Z, are next-door neighbors and share Victoria Falls.",text:"Name a country with the letter Z in its name.",test:c=>c.key.includes("z")},
  {id:"same-letter",diff:"m",why:"Countries that start and end with A are weirdly common: Albania, Algeria, Andorra, Angola, Argentina, Armenia, Australia, Austria.",text:"Name a country whose name starts and ends with the same letter.",test:c=>c.key[0]===c.key[c.key.length-1]},
  {id:"short",diff:"m",why:"Togo's capital, Lomé, is also four letters. Very efficient country.",text:"Name a country whose name is four letters or fewer.",test:c=>c.key.length<=4},
