@@ -1243,8 +1243,8 @@ function bubbyTip(pr,err,input){
   pool.sort();let hh=0;for(const ch of pr.id+TODAY)hh=(hh*31+ch.charCodeAt(0))>>>0;
   err.classList.add("gold");err.textContent=`Psst, Murph. Bubby says try ${C[pool[hh%pool.length]].name}.`;input.value="";}
 function suggest(q){const n=norm(q);if(!n)return[];const out=[];
-  for(const c of LIST){let best=9,via=null;c.search.forEach((s,i)=>{const r=s.startsWith(n)?0:s.split(" ").some(w=>w.startsWith(n))?1:(n.length>=3&&s.includes(n))?2:9;if(r<best){best=r;via=i===0?null:c.aliases[i-1]}});if(best<9)out.push({id:c.id,r:best,via})}
-  return out.sort((a,b)=>a.r-b.r||C[a.id].name.localeCompare(C[b.id].name)).slice(0,TOUCH?4:6);}
+  for(const c of LIST){let best=9,via=null;c.search.forEach((s,i)=>{const r=s===n?-1:s.startsWith(n)?0:s.split(" ").some(w=>w.startsWith(n))?1:(n.length>=3&&s.includes(n))?2:9;if(r<best){best=r;via=i===0?null:c.aliases[i-1]}});if(best<9)out.push({id:c.id,r:best,via})}
+  return out.sort((a,b)=>a.r-b.r||C[b.id].fame-C[a.id].fame||C[a.id].name.localeCompare(C[b.id].name)).slice(0,TOUCH?4:6);}
 
 /* ---------- reveal ---------- */
 function renderReveal(){
