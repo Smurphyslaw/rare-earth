@@ -439,12 +439,14 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pc-front{display:grid;place-items:center;outline:1.5px solid #D9CDB5;outline-offset:-12px}
 .pc-front svg{width:52%;height:auto}
 .pc-back{transform:rotateY(180deg);display:grid;grid-template-columns:1.25fr 1fr;padding:18px 18px 16px}
-.pc-msg{padding-right:14px;border-right:1.5px solid #C9BCA2;display:flex;flex-direction:column;gap:8px;min-width:0}
-.pc-msg p{margin:0;color:#3D4A63;font-size:clamp(12.5px,3.4vw,14.5px);line-height:1.4}
+.pc-msg{overflow:hidden;padding-right:14px;border-right:1.5px solid #C9BCA2;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pc-msg p{margin:0;color:#3D4A63;font-size:var(--pc-fs,clamp(12.5px,3.4vw,14.5px));line-height:1.4}
 .pc-date{font-size:11px!important;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#865410!important}
 .pc-by{font-weight:800;color:#865410!important}
-.pc-addr{position:relative;padding-left:14px;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding-bottom:10px}
-.pc-addr i{display:block;border-bottom:1.5px solid #C9BCA2;font-style:normal;font-size:12.5px;font-weight:700;color:#3D4A63;padding-bottom:3px;min-height:18px}
+.pc-addr{position:relative;padding-left:14px;display:flex;flex-direction:column;justify-content:flex-end;gap:clamp(6px,2.4vw,12px);padding-bottom:6px}
+.pc-addr i{display:block;border-bottom:1.5px solid #C9BCA2;font-style:normal;font-size:clamp(11px,3.1vw,13px);font-weight:700;color:#3D4A63;padding-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.pc-addr .pc-country{font-weight:900;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(10px,2.8vw,12px)}
+.pc-cancel{position:absolute;top:12px;right:44px;width:66px;height:30px;opacity:.55;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 66 30'%3E%3Cg fill='none' stroke='%2322477C' stroke-width='1.6'%3E%3Cpath d='M0 6q8-5 16 0t16 0 16 0 18 0'/%3E%3Cpath d='M0 15q8-5 16 0t16 0 16 0 18 0'/%3E%3Cpath d='M0 24q8-5 16 0t16 0 16 0 18 0'/%3E%3C/g%3E%3C/svg%3E");background-repeat:no-repeat;background-size:100% 100%;pointer-events:none}
 .pc-stamp{position:absolute;top:0;right:0;width:54px;height:62px;display:grid;place-items:center;border:1.5px dashed #B5A88E;color:#22477C}
 .pc-stamp svg{width:46px;height:46px}
 .pc-tip{text-align:center;color:var(--muted)!important}
@@ -1834,7 +1836,7 @@ function passportShell(title,sub,back,...body){
   setStage("sm",false);GL.dim=0;GL.spin=true;GL.colorOf=id=>PROF.stamps[id]!=null?COL.t[PROF.stamps[id]]:null;
 }
 /* the passport: a small booklet with passport-page proportions, one page at a time */
-function passportPages(room=380){
+function passportPages(room=380,measure=null){
   const ids=Object.keys(PROF.stamps),golds=ids.filter(id=>PROF.stamps[id]===5).length,cards=Object.keys(PROF.cards);
   const pages=[];
   pages.push({title:"Your map",build:()=>{const cv=h("canvas",{class:"pp-map",role:"img","aria-label":`World map with ${ids.length} stamped countries`});
@@ -1845,12 +1847,14 @@ function passportPages(room=380){
   // postcard sets, packed so each page's sets fit its height (room = the page body's height in px)
   const sets=SET_ORDER.filter(kind=>ALL_CARDS.some(c=>c.kind===kind)||cards.some(k=>PROF.cards[k].kind===kind)).map(kind=>{
     const all=ALL_CARDS.filter(c=>c.kind===kind).map(c=>c.key),mine=cards.filter(k=>PROF.cards[k].kind===kind);return {kind,keys:[...new Set([...mine,...all])],mine:mine.length};});
-  const SET_H=52,ROW_H=72,cost=st=>SET_H+Math.ceil(st.keys.length/4)*ROW_H;
-  let cur=[],n=0;const flush=()=>{if(cur.length){const group=cur,at=pages.length;pages.push({title:"Postcards",build:()=>h("div",{class:"pp-pagebody"},...group.map(g=>h("div",{class:"pp-set"},
+  const setEl=(g,at)=>h("div",{class:"pp-set"},
       h("div",{class:"pp-set-h"},h("b",null,SET_NAME[g.kind]),h("em",null,`${g.mine}/${g.keys.length}`)),
       h("div",{class:"pp-album"},g.keys.map(key=>{const c=PROF.cards[key];if(!c)return h("span",{class:"pp-seal pp-empty","aria-label":"Not found yet"},h("i",null,"?"));
-        const bt=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key,at),"aria-label":c.name+" postcard"});bt.innerHTML=cardArt(c,84);return bt;})))))});}cur=[];n=0;};
-  for(const st of sets){if(n&&n+cost(st)>room)flush();cur.push(st);n+=cost(st);}flush();
+        const bt=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key,at),"aria-label":c.name+" postcard"});bt.innerHTML=cardArt(c,84);return bt;})));
+  // each set is measured on this screen, and a page takes sets until the next one would run past its foot
+  const GAP=12;let cur=[],used=0;
+  const flush=()=>{if(cur.length){const group=cur,at=pages.length;pages.push({title:"Postcards",build:()=>h("div",{class:"pp-pagebody"},...group.map(g=>setEl(g,at)))});}cur=[];used=0;};
+  for(const st of sets){const need=(measure?measure(setEl(st,0)):200)+(cur.length?GAP:0);if(cur.length&&used+need>room)flush();cur.push(st);used+=need;}flush();
   return pages;
 }
 let PP_PAGE=0;
@@ -1867,7 +1871,8 @@ renderPassport=function(page=0){
     h("div",{class:"pp-booklet"},pageEl),h("div",{class:"pp-nav"},prev,dots,next));
   // measure the page body's real height on this screen, then pack the postcard sets to fit it
   const probe=h("div",{class:"pp-pagebody"});pageEl.replaceChildren(h("div",{class:"pp-pagehead"},h("span",null,"Rare Earth · Passport"),h("span",null,"Postcards")),probe,h("div",{class:"pp-pagefoot"},"1"));
-  pages=passportPages(Math.max(200,probe.clientHeight-20));PP_PAGE=Math.max(0,Math.min(pages.length-1,page));
+  const measure=el=>{probe.append(el);const hh=el.getBoundingClientRect().height;el.remove();return hh;};
+  pages=passportPages(Math.max(200,probe.clientHeight-parseFloat(getComputedStyle(probe).paddingTop)-6),measure);PP_PAGE=Math.max(0,Math.min(pages.length-1,page));
   show(0);
 };
 /* a postcard on its own: the place on the front, a written back with a stamp box */
@@ -1878,11 +1883,14 @@ function openPostcard(key,fromPage=0){
   const front=h("div",{class:"pc-face pc-front"}),stamp=h("span",{class:"pc-stamp"});
   const back=h("div",{class:"pc-face pc-back"},
     h("div",{class:"pc-msg"},h("p",{class:"pc-date"},date),h("p",null,factFor(key)||c.note),h("p",{class:"pc-by"},`Found with ${C[c.by]?.name||""}`)),
-    h("div",{class:"pc-addr"},stamp,h("i",null,"Your passport"),h("i",null,"Rare Earth"),h("i",null,"")));
+    h("div",{class:"pc-addr"},stamp,h("span",{class:"pc-cancel","aria-hidden":"true"}),h("i",null,"The Climber"),h("i",null,"Top Step, Ladder Lane"),h("i",null,"Desk Globe, Second Shelf"),h("i",{class:"pc-country"},"Planet Earth")));
   front.innerHTML=cardArt(c,150);stamp.innerHTML=cardArt(c,46);flip.append(front,back);card.append(flip);
   const turn=()=>{card.classList.toggle("flipped");sfx.lock();};
   card.addEventListener("click",turn);card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();turn();}});
   passportShell(c.name,"Postcard",h("button",{class:"btn ghost small",onclick:()=>renderPassport(fromPage)},"Passport"),card,h("p",{class:"pp-note pc-tip"},"Tap the card to turn it over."));
+  // a long fact shrinks a little rather than spilling off the card
+  const msg=back.querySelector(".pc-msg"),fit=()=>{if(!msg.isConnected)return;msg.style.removeProperty("--pc-fs");let fs=parseFloat(getComputedStyle(msg.children[1]).fontSize);while(msg.scrollHeight>msg.clientHeight+1&&fs>10){fs-=.5;msg.style.setProperty("--pc-fs",fs+"px");}};
+  requestAnimationFrame(fit);const ro=new ResizeObserver(()=>{if(card.isConnected)fit();else ro.disconnect();});ro.observe(card);
 }
 
 renderFoot();
