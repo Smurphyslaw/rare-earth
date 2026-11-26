@@ -1157,10 +1157,11 @@ function renderStart(quiet){
   const sq=(set,ans)=>h("span",{class:"sqrow","aria-hidden":"true"},set.map(p=>ans[p]?h("i",{style:tv(ans[p].t)}):h("i",{class:"empty"})));
   const today=done
     ?h("div",{class:"today"},h("div",null,h("div",{class:"eyebrow"},"Today's puzzle is done"),h("div",{class:"today-score"},scoreOf(TODAY_SET,A).toLocaleString("en-US"),h("small",null," / 5,000")),sq(TODAY_SET,A)),
-      h("div",{class:"actions"},h("button",{class:"btn",onclick:()=>{S.practice=false;S.archive=0;S.set=TODAY_SET;renderDone();}},"See results"),h("button",{class:"btn ghost",onclick:()=>renderPassport()},`Passport (${stampCount()})`)))
+      h("div",{class:"actions"},h("button",{class:"btn",onclick:()=>{S.practice=false;S.archive=0;S.set=TODAY_SET;renderDone();}},"See results"),h("button",{class:"btn ghost",onclick:()=>renderPassport()},`Passport (${stampCount()})`),PNUM>1?h("button",{class:"btn ghost",onclick:()=>startPractice()},"Practice round"):null))
     :h("div",{class:"actions"},
       h("button",{class:"btn wide",id:"start",onclick:()=>{audio();S.practice=false;S.archive=0;S.set=TODAY_SET;S.i=TODAY_SET.findIndex(p=>!A[p]);renderPlay();sfx.start();}},started?"Continue today's puzzle":"Start today's puzzle"),
-      h("button",{class:"btn ghost",onclick:()=>renderPassport()},`Passport (${stampCount()})`));
+      h("button",{class:"btn ghost",onclick:()=>renderPassport()},`Passport (${stampCount()})`),
+      PNUM>1?h("button",{class:"btn ghost",onclick:()=>startPractice()},"Practice round"):null);
   const rows=[];
   for(let n=PNUM-1;n>=1&&rows.length<60;n--){const set=dailySet(n),ans=loadAnswers(n),cnt=set.filter(p=>ans[p]).length,full=cnt===set.length;
     rows.push(h("div",{class:"arch-row"},h("div",{class:"arch-meta"},h("b",null,`No. ${n}`),h("span",null,dateFor(n))),
@@ -1488,6 +1489,7 @@ $("help").querySelector(".help-steps").replaceChildren(
   h("li",null,"Name one country. It climbs as far as it fits. Example: Brazil fits \"in South America\" (100) but not \"landlocked\", so it stops there. Paraguay keeps climbing."),
   h("li",null,"Stuck? Hints help, but they make that question worth less. Gold and a postcard allow one hint at most."));
 $("help").querySelector(".help-steps").after(h("button",{class:"btn wide help-play",onclick:()=>{closeHelp();const s=$("start");if(s)s.click();}},"Play today's puzzle"));
+{const pn=[...$("help").querySelectorAll(".section-h")].find(e=>/Streaks, passport/.test(e.textContent));if(pn){const note=pn.nextElementSibling;note.after(h("p",{class:"help-note"},"Want a warm-up? A practice round mixes five ladders from past days. It doesn't count toward your streak or passport."),h("button",{class:"btn ghost help-practice",onclick:()=>{closeHelp();if(PNUM>1)startPractice();}},"Play a practice round"));}}
 $("help-tiers").replaceChildren(...[["Four-clue ladders",[100,250,500,1000],[1,2,4,5]],["Three-clue ladders",[250,500,1000],[2,4,5]]].map(([lab,pts,ts])=>
   h("li",{style:"flex-wrap:wrap"},h("b",null,lab),h("span",{style:"display:flex;gap:10px;flex-wrap:wrap"},pts.map((p,i)=>h("strong",{class:"number inked",style:"font-size:17px;--tone:var("+TIERS[ts[i]].tc+")"},fmt(p)))))));
 const tiersHead=[...$("help").querySelectorAll(".section-h")].find(e=>/Rarity tiers/.test(e.textContent));if(tiersHead){tiersHead.textContent="Points";const n=tiersHead.nextElementSibling?.nextElementSibling;if(n&&n.classList.contains("help-note"))n.textContent="The top step is always worth 1,000. Five questions a day, so a perfect day is 5,000.";}
@@ -1752,7 +1754,7 @@ renderDone=function(celebrate=false){
   else{GL.spin=true;}
   if(!S.practice){const upd=()=>{const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.max(0,Math.floor((m-n)/1000));cd.textContent=`${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}`;};upd();cdTimer=setInterval(upd,1000);}
 };
-startPractice=function(){S.practice=true;S.archive=0;S.prac={};const pool=Object.keys(LP).filter(id=>!TODAY_SET.includes(id));S.set=shuffle(pool,Math.random).slice(0,PER);S.i=0;audio();renderPlay();sfx.start();};
+startPractice=function(){S.practice=true;S.archive=0;S.prac={};const pool=[];for(let n=1;n<PNUM;n++)pool.push(...dailySet(n).filter(id=>LP[id]&&!TODAY_SET.includes(id)));if(!pool.length)return;S.set=shuffle([...new Set(pool)],Math.random).slice(0,PER).sort((a,b)=>LP[a].clues.length-LP[b].clues.length);S.i=0;audio();renderPlay();sfx.start();};
 
 
 /* ---------- Rare Earth · passport ----------
