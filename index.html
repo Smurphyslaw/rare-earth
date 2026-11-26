@@ -756,13 +756,13 @@ function countUp(el,to,ms,prefix=""){const from=+(el.dataset.v||0);el.dataset.v=
 // Cropped from “Stamp” by kermite607 (CC0): freesound.org/people/kermite607/sounds/362624/
 // The recording has two transients. Keep the main impact for earned ink and use the lighter release for UI cues.
 const FOLEY={
-  open:{from:.315,to:.486,volume:.36,cutoff:1650},
-  lock:{from:.371,to:.442,volume:.26,cutoff:4100},
-  rung:{from:.382,to:.457,volume:.35,cutoff:2600},
-  clock:{from:.392,to:.428,volume:.12,cutoff:1300},
-  miss:{from:.364,to:.491,volume:.27,cutoff:630},
+  open:{from:.315,to:.486,volume:.5,cutoff:2200},
+  lock:{from:.371,to:.442,volume:.42,cutoff:4100},
+  rung:{from:.382,to:.457,volume:.5,cutoff:3000},
+  clock:{from:.392,to:.428,volume:.26,cutoff:2600},
+  miss:{from:.364,to:.491,volume:.46,cutoff:1200,rate:.82},
   press:{from:.069,to:.202,volume:.63,cutoff:5000},
-  close:{from:.072,to:.226,volume:.46,cutoff:1380}
+  close:{from:.072,to:.226,volume:.5,cutoff:1600}
 };
 const SND={on:true,ctx:null,out:null,buffer:null,loading:null,version:0};
 try{SND.on=localStorage.getItem("rare-earth:sound")!=="off";}catch(e){}
@@ -794,23 +794,23 @@ function audio(){
     return SND.ctx;
   }catch(e){return null;}
 }
-function deskSound(name,weight=1){
+function deskSound(name,weight=1,rateOverride){
   const ctx=audio();
   if(!ctx||document.hidden)return;
   const epoch=S.epoch,version=SND.version;
   const play=buffer=>{
     if(!buffer||!SND.on||SND.version!==version||S.epoch!==epoch||document.hidden)return;
-    const {from,to,volume,cutoff}=FOLEY[name];
+    const {from,to,volume,cutoff,rate=1}=FOLEY[name];const pr=rateOverride||rate,len=(to-from)/pr;
     const start=ctx.currentTime;
     const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
-    source.buffer=buffer;
+    source.buffer=buffer;source.playbackRate.value=pr;
     filter.type="lowpass";
     filter.frequency.value=cutoff;
     filter.Q.value=.65;
     gain.gain.setValueAtTime(0,start);
     gain.gain.linearRampToValueAtTime(volume*weight,start+.003);
-    gain.gain.setValueAtTime(volume*weight,start+to-from-.018);
-    gain.gain.linearRampToValueAtTime(0,start+to-from);
+    gain.gain.setValueAtTime(volume*weight,start+len-.018);
+    gain.gain.linearRampToValueAtTime(0,start+len);
     source.connect(filter).connect(gain).connect(SND.out);
     source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
     source.start(start,from,to-from);
@@ -820,7 +820,7 @@ function deskSound(name,weight=1){
 const sfx={
   start:()=>deskSound("open"),
   lock:()=>deskSound("lock"),
-  tick:index=>deskSound("rung",Math.min(1.1,.75+index*.09)),
+  tick:index=>deskSound("rung",1,[.94,1,1.07,1.14,1.2,1.26,1.3,1.34][Math.max(0,index)]||1),
   clock:()=>deskSound("clock"),
   miss:()=>deskSound("miss"),
   stamp:()=>deskSound("press"),
