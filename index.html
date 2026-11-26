@@ -1548,11 +1548,11 @@ renderReveal=function(animate=true){
   if(!id)animate=false;
   const endState=q.clues.map((c,j)=>j<=k?"hit":j===k+1&&id?"missed":"faded");
   const lad=ladderList(q,animate?q.clues.map(()=>""):endState),rungs=[...lad.querySelectorAll(".rung")];
-  const verdictText=k>=0?(k===n-1?(a.h?`Top, with ${a.h===1?"a hint":a.h+" hints"}`:"Top of the ladder!"):`${k+1} of ${n} steps`):id?"Off the ladder":a.to?"Time ran out":"Passed";
+  const verdictText=k>=0?(k===n-1?(a.t===5?"Top of the ladder!":"You made the top"):`${k+1} of ${n} steps`):id?"Off the ladder":a.to?"Time ran out":"Passed";
   const verdict=h("h3",{class:"climb-verdict"},animate?"Climbing…":verdictText);
   const tally=h("strong",{class:"number inked tally",style:"--tone:"+(k>=0?(a.t>=0?COL.t[a.t]:COL.miss):COL.miss)},animate?"+0":"+"+fmt(a.pts??ptsAt(q,k)));
   const explain=h("p",{class:"explain"});
-  const hintNote=a.h?h("p",{class:"explain hint-cost"},`${a.h} ${a.h===1?"hint":"hints"} used: −${Math.round([0,.1,.25,.5][a.h]*100)}% (${fmt(a.full??ptsAt(q,k))} → ${fmt(a.pts)})`+(k===q.clues.length-1&&a.t!==5?". Gold and the postcard need an answer worth 900 or more.":"")):null;
+  const hintNote=a.h?h("p",{class:"explain hint-cost"},k===q.clues.length-1&&a.t!==5?`With hints, this one is worth ${fmt(a.pts)}. Reach the top without them for gold and a postcard.`:`With hints, this one is worth ${fmt(a.pts)}.`):null;
   if(id&&k<n-1){const nxt=q.answers[k+1].map(x=>C[x].name);explain.textContent=k<0?`${C[id].name} doesn't fit the first clue.`:`${C[id].name} stops at step ${k+1}. ${nxt.length<=4?"Step "+(k+2)+": "+nxt.join(", "):nxt.length+" countries reach step "+(k+2)}.`;}
   else if(!id)explain.textContent=a.to?"No answer in time.":"No answer this time.";
   if(animate)explain.hidden=true;
