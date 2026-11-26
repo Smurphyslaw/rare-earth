@@ -393,6 +393,22 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 
 /* phones: a bigger globe while the answer is revealed */
 @media (max-width:520px){.stage[data-size="md"]{width:min(310px,82vw,40svh)}}
+/* results list: number · country + step marks · points; details on tap */
+.rrow .row{grid-template-columns:22px minmax(0,1fr) auto;gap:12px;padding:13px 0}
+.rrow .rnum{font-stretch:125%;font-weight:900;color:var(--muted);font-size:14px;text-align:center}
+.rrow .rmid{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap}
+.rrow .rmid b{font-weight:800;font-size:16.5px}
+.rstep{display:inline-flex;gap:4px}
+.rstep i{width:14px;height:6px;border-radius:2px;background:var(--line)}
+.rstep i.on{background:var(--tc)}
+.rrow .row-more{padding:2px 0 16px 34px}
+.rclues{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:5px;counter-reset:c}
+.rclues li{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted);counter-increment:c}
+.rclues li span::before{content:counter(c) ". ";font-weight:800}
+.rclues li.on{color:var(--paper)}.rclues li.miss span{text-decoration:line-through;text-decoration-color:var(--miss)}
+.rclues li em{font-style:normal;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.ralso{margin:0;color:var(--muted);font-size:13.5px}
+.rrow summary::after{content:"";}
 </style>
 </head>
 <body>
@@ -895,7 +911,7 @@ function drawFrame(t){
   const cv=GL.cv,ctx=GL.ctx,dpr=Math.min(2,devicePixelRatio||1),w=cv.clientWidth,TAU=Math.PI*2;
   if(w>=60){const px=Math.round(w*dpr);if(cv.width!==px){cv.width=px;cv.height=px;}
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,w);
-    if(GL.anim){const k=Math.min(1,(t-GL.anim.start)/GL.anim.dur);GL.rot=GL.anim.interp(d3.easeCubicInOut(k));if(k>=1)GL.anim=null;}
+    if(GL.anim){const k=Math.min(1,(t-GL.anim.start)/GL.anim.dur),e=d3.easeCubicInOut(k);GL.rot=GL.anim.interp(e);if(GL.anim.zi)GL.zoom=GL.zoomTo=GL.anim.zi(e);if(k>=1)GL.anim=null;}
     else if(GL.fling&&!GL.drag){const f=GL.fling;GL.rot=[GL.rot[0]+f.vx*dt,Math.max(-80,Math.min(80,GL.rot[1]+f.vy*dt)),0];const k=Math.pow(.93,dt/16);f.vx*=k;f.vy*=k;if(Math.abs(f.vx)+Math.abs(f.vy)<.004)GL.fling=null;}
     else if(GL.spin&&!GL.drag&&!reduceMotion)GL.rot=[GL.rot[0]+dt*GL.speed,GL.rot[1],0];
     GL.zoom+=(GL.zoomTo-GL.zoom)*(reduceMotion?1:.2);
@@ -922,7 +938,10 @@ function drawFrame(t){
     }
     ctx.restore();
     if(GL.proj&&GL.ready){
-      GL.pins.forEach((p,i)=>{const ll=GL.cent[p.id];if(!ll||!visible(ll))return;const [x,y]=GL.proj(ll);ctx.beginPath();ctx.arc(x,y,10,0,TAU);ctx.fillStyle=p.color;ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=2.5;ctx.stroke();
+      GL.pins.forEach((p,i)=>{const ll=GL.cent[p.id];if(!ll)return;let [x,y]=GL.proj(ll);const dx=x-cx,dy=y-cy,d=Math.hypot(dx,dy)||1,out=!visible(ll)||d>LR-10;
+        if(out){const ux=dx/d,uy=dy/d,rr=LR-15;x=cx+ux*rr;y=cy+uy*rr;const tx=cx+ux*(LR-1),ty=cy+uy*(LR-1),px=-uy*6,py=ux*6;
+          ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(x+ux*6+px,y+uy*6+py);ctx.lineTo(x+ux*6-px,y+uy*6-py);ctx.closePath();ctx.fillStyle=p.color;ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=1.6;ctx.lineJoin="round";ctx.stroke();}
+        ctx.beginPath();ctx.arc(x,y,10,0,TAU);ctx.fillStyle=p.color;ctx.globalAlpha=out?.92:1;ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=COL.edge;ctx.lineWidth=2.5;ctx.stroke();
         ctx.fillStyle=COL.edge;ctx.font="800 11px Archivo, Arial, sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(i+1),x,y+.5);});
       if(GL.hl&&GL.cent[GL.hl]&&visible(GL.cent[GL.hl])){const [x,y]=GL.proj(GL.cent[GL.hl]);const ph=(t%1700)/1700;
         ctx.beginPath();ctx.arc(x,y,7+ph*30,0,TAU);ctx.strokeStyle=rgba(COL.paper,1-ph);ctx.lineWidth=2.5;ctx.stroke();
@@ -1334,9 +1353,13 @@ const MAXDAY=5000;
 function countF(el,to,ms,prefix=""){const from=+(el.dataset.v||0);el.dataset.v=to;if(reduceMotion||from===to){el.textContent=prefix+fmt(to);return}
   const t0=performance.now();const step=t=>{const k=Math.min(1,(t-t0)/ms);el.textContent=prefix+fmt(Math.round(from+(to-from)*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step);}
 const centerOf=ids=>{const pts=ids.map(id=>GL.cent[id]).filter(Boolean);if(!pts.length)return null;return d3.geoCentroid({type:"MultiPoint",coordinates:pts});};
-function camera(ll,dur=1100){if(!GL.proj||!ll)return;const from=GL.rot.slice(),to=[-ll[0],Math.max(-55,Math.min(55,-ll[1]))*.9,0];
-  while(to[0]-from[0]>180)to[0]-=360;while(to[0]-from[0]<-180)to[0]+=360;GL.spin=false;GL.fling=null;GL.zoomTo=1;GL.anim={start:performance.now(),dur:reduceMotion?1:dur,interp:d3.interpolate(from,to)};}
+function camera(ll,dur=1100,zoom=1){ // turn and zoom together, eased on one curve
+ if(!GL.proj||!ll)return;const from=GL.rot.slice(),to=[-ll[0],Math.max(-55,Math.min(55,-ll[1]))*.9,0];
+  while(to[0]-from[0]>180)to[0]-=360;while(to[0]-from[0]<-180)to[0]+=360;GL.spin=false;GL.fling=null;GL.zoomTo=zoom;GL.anim={start:performance.now(),dur:reduceMotion?1:dur,interp:d3.interpolate(from,to),zi:d3.interpolate(GL.zoom,zoom)};}
 const lakeOf=q=>{const r=q.clues.map(c=>c.rule).find(r=>r.field==="lakes");return r&&LAKES[r.value]?{id:r.value,geo:LAKES[r.value]}:null;};
+const MAXZ=()=>innerWidth<=520?1.9:1.5;
+// zoom grows as the set of possible answers shrinks
+const zoomForSet=ids=>{const pts=ids.map(id=>GL.cent[id]).filter(Boolean);if(pts.length<2)return MAXZ();const c=d3.geoCentroid({type:"MultiPoint",coordinates:pts});const spread=Math.max(...pts.map(p=>d3.geoDistance(p,c)))*180/Math.PI;return Math.max(1,Math.min(MAXZ(),38/Math.max(1,spread)));};
 const linesOf=(q,upTo)=>q.clues.slice(0,upTo+1).map(c=>c.rule.field).filter(f=>f==="equator"||f==="tropicCancer"||f==="tropicCapricorn");
 
 /* lines and lakes drawn on the globe */
@@ -1485,7 +1508,7 @@ renderReveal=function(animate=true){
   const top=q.answers.at(-1);
   const finalView=()=>{GL.colorOf=x=>top.includes(x)?COL.t[5]:x===id&&k<0?COL.miss:x===id?COL.t[tierAt(q,k)]:null;
     GL.ladder={lake:lake&&lake.geo,lines:linesOf(q,n-1),label:lake?{ll:(b=>[(b[0][0]+b[1][0])/2,b[1][1]+1.3])(d3.geoBounds(lake.geo)),text:q.reveal.feature||""}:null};
-    camera(lake?d3.geoCentroid(lake.geo):centerOf(top),900);GL.zoomTo=innerWidth<=520?1.9:1.5;};
+    camera(lake?d3.geoCentroid(lake.geo):centerOf(top),900,zoomForSet(top));};
   GL.info=x=>{let j=-1;for(let s=0;s<q.answers.length;s++){if(q.answers[s].includes(x))j=s;else break;}return j>=0?{text:`Reaches step ${j+1} · ${fmt(ptsAt(q,j))}`,style:tv(tierAt(q,j))}:{text:"Doesn't fit clue 1"};};
   GL.hl=id||top[0];GL.hlColor=k>=0?COL.t[tierAt(q,k)]:id?COL.miss:COL.ink;
   const finish=async()=>{const alive=()=>S.epoch===ep&&S.screen==="reveal";
@@ -1510,12 +1533,12 @@ renderReveal=function(animate=true){
     later.classList.remove("wait");if(animate)$("next").focus({preventScroll:true});};
   if(!animate||reduceMotion){rungs.forEach((r,j)=>r.className="rung "+endState[j]);q.clues.slice(1).forEach((c,j)=>setFill(lad,j,j<k?1:j===k&&id?.54:0));tally.textContent="+"+fmt(ptsAt(q,k));finish();return;}
   // the climb: rail fill, count-up and globe share one clock
-  const dur=650+500/n,miss=360,end=dur*(k+1)+(k===n-1?0:miss);
+  const dur=reduceMotion?1:900+400/n,miss=360,end=dur*(k+1)+(k===n-1?0:miss);
   let step=-2,done=false;const t0=performance.now();
   const hudBefore=scoreOf(S.set)-a.pts,hudEl=$("hud-score").querySelector("b");
   const view=s=>{const set=q.answers[s];GL.colorOf=x=>set.includes(x)?COL.t[tierAt(q,s)]:x===id?COL.miss:null;
     GL.ladder={lines:linesOf(q,s),lake:q.clues[s].rule.field==="lakes"&&lake?lake.geo:null};
-    const c=s===0&&GL.cent[id]?GL.cent[id]:centerOf(set);if(c)camera(c,dur*.95);};
+    const c=s===0&&GL.cent[id]?GL.cent[id]:centerOf(set);if(c)camera(c,dur*.98,s===0?1:zoomForSet(set));};
   const tick=now=>{if(done||S.epoch!==ep||S.screen!=="reveal")return;const e=Math.min(end,now-t0);
     const phase=Math.floor(e/dur),f=(e-phase*dur)/dur;
     if(phase!==step&&phase<n&&phase<=k+1){step=phase;if(step<=k)view(step);rungs[step].classList.add("now");}
@@ -1536,11 +1559,19 @@ shareText=function(){const total=scoreOf(S.set),A=answers();const sq=S.set.map(p
   return `Rare Earth #${S.archive||PNUM} · ${fmt(total)}/${fmt(S.set.length*1000)}\n${sq}\n${steps}${!S.practice&&!S.archive&&st>1?`\nStreak ${st}`:""}`;};
 renderDone=function(celebrate=false){
   const total=scoreOf(S.set),A=answers();
-  const rows=S.set.map(pid=>{const q=LP[pid],a=A[pid]||{t:-1,pts:0,k:-1};
-    return h("details",{class:"rowd"},h("summary",{class:"row",style:tv(a.t)},h("span",{class:"sq"}),
-      h("div",{style:"min-width:0"},h("div",{class:"q"},q.clues.map(c=>c.clue.replace(/^…and /,"")).join(" → ")),h("div",{class:"a"},a.c?C[a.c].name:"No answer"," ",h("span",null,`· ${(a.k??-1)+1}/${q.clues.length}`),a.n?h("span",{class:"new"},"NEW"):null)),
-      h("strong",{class:"number inked p",style:"--tone:"+(a.t>=0?COL.t[a.t]:COL.miss)},fmt(a.pts))),
-      h("div",{class:"row-more"},h("p",{class:"row-more-h"},(q.answers.at(-1).length>1?"1,000-point answers: ":"1,000-point answer: ")+q.answers.at(-1).map(x=>C[x].name).join(", ")),q.fieldNote?h("p",{class:"why"},q.fieldNote):null));});
+  // one tidy line per question; the clues and the other answers open on tap
+  const rows=S.set.map((pid,qi)=>{const q=LP[pid],a=A[pid]||{t:-1,pts:0,k:-1},k=a.k??-1,n=q.clues.length,top=q.answers.at(-1);
+    const steps=h("span",{class:"rstep","aria-label":`${k+1} of ${n} steps`},q.clues.map((c,j)=>h("i",{class:j<=k?"on":"",style:j<=k?"--tc:"+COL.t[tierAt(q,j)]:""})));
+    const fact=(typeof factFor==="function"&&factFor(cardKey(q)))||"";
+    return h("details",{class:"rowd rrow"},h("summary",{class:"row",style:tv(a.t)},
+        h("span",{class:"rnum"},String(qi+1)),
+        h("div",{class:"rmid"},h("b",null,a.c?C[a.c].name:a.to?"Time ran out":"Passed"),steps),
+        h("strong",{class:"number inked p",style:"--tone:"+(a.t>=0?COL.t[a.t]:COL.miss)},fmt(a.pts))),
+      h("div",{class:"row-more"},
+        h("ol",{class:"rclues"},q.clues.map((c,j)=>h("li",{class:j<=k?"on":j===k+1&&a.c?"miss":""},h("span",null,c.clue.replace(/^…and /,"").replace(/^./,m=>m.toUpperCase())),h("em",null,`${q.answers[j].length} fit`)))),
+        h("p",{class:"row-more-h"},(top.length>1?"Top answers: ":"Top answer: ")+top.map(x=>C[x].name).join(", ")),
+        h("p",{class:"ralso"},"Also fit the first clue: "+q.answers[0].filter(x=>!top.includes(x)&&x!==a.c).slice(0,10).map(x=>C[x].name).join(", ")+(q.answers[0].length>11?` and ${q.answers[0].length-11} more`:"")),
+        fact?h("p",{class:"why"},fact):null));});
   const box=h("pre",{class:"sharebox"},shareText());
   const copied=h("span",{class:"status",role:"status"});
   const copy=h("button",{class:"btn",onclick:()=>{const txt=shareText();const sel=()=>{const r=document.createRange();r.selectNodeContents(box);const s=getSelection();s.removeAllRanges();s.addRange(r);copied.textContent="Selected. Press Ctrl+C or ⌘C to copy.";};
@@ -1565,7 +1596,7 @@ renderDone=function(celebrate=false){
       h("span",null,h("b",null,fmt(bestScore())),"best"),
       h("span",null,h("b",null,String(played())),played()===1?"day played":"days played"),
       ),
-    h("p",{class:"hint"},"Tap any question to see its top answer."),h("div",{class:"rows"},rows),
+    h("p",{class:"hint"},"Tap a question to see its clues and the other answers."),h("div",{class:"rows"},rows),
     boardEl,
     S.practice?null:box,
     h("div",{class:"actions"},S.practice?null:copy,
