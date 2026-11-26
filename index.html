@@ -306,7 +306,9 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 @media (min-width:1000px){
   .wrap{max-width:1180px;min-height:100dvh;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,500px) minmax(0,600px);grid-template-rows:auto 1fr auto;justify-content:center;column-gap:72px;align-items:center}
   .wrap>header{grid-column:1/-1;grid-row:1;align-self:start}
-  .wrap>.stage,.wrap>.stage[data-size]{grid-column:1;grid-row:2;width:min(500px,100%,70dvh);height:auto;margin:0 auto;overflow:visible;align-self:center;position:sticky;top:max(24px,calc(50dvh - 250px))}
+  .wrap>.stage,.wrap>.stage[data-size]{--gw:min(500px,70dvh);grid-column:1;grid-row:2;width:min(500px,100%,70dvh);height:auto;margin:max(0px,calc((100dvh - 96px - var(--gw)) / 2)) auto 0;overflow:visible;align-self:start;position:sticky;top:max(24px,calc(50dvh - var(--gw) / 2))}
+  .total:has(.day-stamp){flex-wrap:nowrap}
+  .total:has(.day-stamp) .big.number{font-size:72px}
   .wrap>.stage[data-size="play"] .zoom{display:flex}
   .wrap>.stage-hint{grid-column:1;grid-row:3;align-self:start;text-align:center}
   .wrap>main{grid-column:2;grid-row:2/span 2;align-self:center;padding-block:24px}
@@ -373,6 +375,20 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pp-goal b{color:var(--paper);font-weight:850}
 @media (prefers-reduced-motion:reduce){.pp-flip{transition:none}}
 @media (pointer:coarse){.icon-btn{min-width:44px;min-height:44px}#hint{min-height:44px}}
+/* answer row: the box and a separate Lock in button */
+.answer-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+.lock-btn{min-height:56px;padding-inline:18px}
+.lock-btn:disabled{opacity:.45;cursor:default}
+/* day stamp: a passport impression next to the total for a great or perfect day */
+.total{position:relative;align-items:center}
+.day-stamp{margin-left:auto;display:grid;place-items:center;align-content:center;width:104px;height:104px;border-radius:50%;color:var(--ink);border:4px double currentColor;transform:rotate(-11deg);text-align:center;line-height:1;position:relative;flex:none}
+.day-stamp::after{content:"";position:absolute;inset:7px;border:1px solid currentColor;border-radius:50%;opacity:.55}
+.day-stamp b{font-stretch:100%;font-weight:900;font-size:15px;letter-spacing:.02em}
+.day-stamp i{font-style:normal;font-stretch:125%;font-weight:900;font-size:13px;letter-spacing:.12em;margin-top:3px}
+.day-stamp small{font-size:9.5px;font-weight:800;letter-spacing:.1em;margin-top:5px;opacity:.85}
+.day-stamp .ds-star{font-size:13px;margin-bottom:3px}
+.day-stamp.big{width:124px;height:124px}.day-stamp.big b{font-size:18px}
+@media (max-width:520px){.day-stamp{width:92px;height:92px}.day-stamp b{font-size:12.5px}.day-stamp i{font-size:10.5px}.day-stamp.big{width:104px;height:104px}.day-stamp.big b{font-size:14.5px}}
 </style>
 </head>
 <body>
@@ -839,8 +855,7 @@ renderSound();
 
 function registerInk(row,score,ink,animated){
   row.style.setProperty("--finish-ink",ink);
-  row.classList.add("ink-finish");
-  if(animated&&!reduceMotion){row.classList.add("printing");score.classList.add("ink-press");}
+  if(animated&&!reduceMotion)score.classList.add("ink-press");
 }
 
 /* ---------- the globe ---------- */
@@ -1383,14 +1398,17 @@ renderPlay=function(){
     const parts=Object.entries(by).sort((x,y)=>y[1]-x[1]).map(([k,n])=>`${CN[k]} (${n})`);
     const l=parts.length>1?parts.slice(0,-1).join(", ")+" and "+parts[parts.length-1]:parts[0];
     hintOut.textContent=`${q.answers[0].length} countries fit clue 1, in ${l}. Only ${q.answers.at(-1).length} ${q.answers.at(-1).length===1?"fits":"fit"} all ${q.clues.length}.`;hintOut.hidden=false;hintBtn.hidden=true;if(!TOUCH)input.focus({preventScroll:true});}},"Hint");
-  const drawSugg=()=>{list.replaceChildren(...sugg.map((s,i)=>h("li",null,h("button",{type:"button",role:"option","aria-selected":String(i===hl),onmousedown:e=>e.preventDefault(),onclick:()=>submit(s.id)},h("span",null,C[s.id].name),s.via?h("small",null,s.via):null))));list.hidden=!sugg.length;};
-  input.addEventListener("input",()=>{err.textContent="";err.classList.remove("gold");sugg=suggest(input.value);hl=0;drawSugg();if(!sugg.length){const t=territoryNote(input.value);if(t)err.textContent=t;}});
+  const drawSugg=()=>{list.replaceChildren(...sugg.map((s,i)=>h("li",null,h("button",{type:"button",role:"option","aria-selected":String(i===hl),onmousedown:e=>e.preventDefault(),onclick:()=>pick(s.id)},h("span",null,C[s.id].name),s.via?h("small",null,s.via):null))));list.hidden=!sugg.length;};
+  const lockBtn=h("button",{type:"button",class:"btn lock-btn",disabled:true,onclick:()=>lockIn()},"Lock in");
+  const pick=id=>{input.value=C[id].name;sugg=[];drawSugg();err.textContent="";lockBtn.disabled=false;lockBtn.classList.add("ready");if(!TOUCH)input.focus({preventScroll:true});};
+  const lockIn=()=>{if(norm(input.value)==="murph"){murphTip(q,err,input);sugg=[];drawSugg();return;}const exact=LOOKUP.get(norm(input.value));
+    if(exact)submit(exact);else if(sugg.length&&norm(input.value).length>=2)pick(sugg[hl].id);
+    else if(input.value.trim())err.textContent=territoryNote(input.value)||"That doesn't match a country. Check the spelling or pick one from the list.";};
+  input.addEventListener("input",()=>{lockBtn.disabled=!input.value.trim();lockBtn.classList.toggle("ready",!!LOOKUP.get(norm(input.value)));err.textContent="";err.classList.remove("gold");sugg=suggest(input.value);hl=0;drawSugg();if(!sugg.length){const t=territoryNote(input.value);if(t)err.textContent=t;}});
   input.addEventListener("keydown",e=>{
     if(e.key==="ArrowDown"&&sugg.length){hl=(hl+1)%sugg.length;drawSugg();e.preventDefault();}
     else if(e.key==="ArrowUp"&&sugg.length){hl=(hl-1+sugg.length)%sugg.length;drawSugg();e.preventDefault();}
-    else if(e.key==="Enter"){e.preventDefault();if(norm(input.value)==="murph"){murphTip(q,err,input);sugg=[];drawSugg();return;}const exact=LOOKUP.get(norm(input.value));
-      if(exact)submit(exact);else if(sugg.length&&norm(input.value).length>=2)submit(sugg[hl].id);
-      else if(input.value.trim())err.textContent=territoryNote(input.value)||"That doesn't match a country. Check the spelling or pick one from the list.";}
+    else if(e.key==="Enter"){e.preventDefault();lockIn();}
     else if(e.key==="Escape"){sugg=[];drawSugg();}
   });
   const wrap=ladderList(q);
@@ -1399,8 +1417,8 @@ renderPlay=function(){
     h("h2",{class:"prompt"},"Name a country that…"),
     wrap,
     h("div",{class:"timer"},track,secs),
-    h("div",{class:"field"},input,list),err,
-    h("div",{class:"hint-row"},h("p",{class:"hint"},"One answer. Climb as high as it fits."),hintBtn),
+    h("div",{class:"answer-row"},h("div",{class:"field"},input,list),lockBtn),err,
+    h("div",{class:"hint-row"},h("p",{class:"hint"},"Pick a country, then lock it in."),hintBtn),
     hintOut));
   layoutRail(wrap);
   setStage("play",false);GL.dim=1;GL.spin=true;GL.speed=.014;GL.colorOf=()=>null;
@@ -1528,10 +1546,13 @@ renderDone=function(celebrate=false){
   const newStamps=S.set.filter(p=>A[p]?.n).length;
   const max=S.set.length*1000,perfect=total===max;
   const big=h("span",{class:"big number inked",style:"--tone:"+COL.t[5]},"0");
-  const totalRow=h("div",{class:"total"},big,h("span",{class:"of"},`/ ${fmt(max)}`));
+  const tier=perfect?{top:"PERFECT",bot:S.practice?"ROUND":"DAY",ink:COL.t[5],big:true}:total>=max*.7?{top:"GREAT",bot:"CLIMB",ink:COL.t[4]}:total>=max*.5?{top:"SOLID",bot:"CLIMB",ink:COL.t[2]}:null;
+  const dayStamp=tier?h("div",{class:"day-stamp"+(tier.big?" big":""),style:"--ink:"+tier.ink,hidden:!!celebrate&&!reduceMotion,"aria-label":tier.top+" "+tier.bot},
+    h("span",{class:"ds-star","aria-hidden":"true"},"★"),h("b",null,tier.top),h("i",null,tier.bot),h("small",null,S.archive?`No. ${S.archive}`:S.practice?"Practice":`No. ${PNUM}`)):null;
+  const totalRow=h("div",{class:"total"},big,h("span",{class:"of"},`/ ${fmt(max)}`),dayStamp);
   setScreen("done",h("div",{class:"card enter"},
     h("div",{class:"row-between"},h("span",{class:"eyebrow"},S.archive?`No. ${S.archive} · ${dateFor(S.archive)} · archive`:S.practice?"Practice round · not saved":`No. ${PNUM} · ${DATE_LABEL}`),pips(S.set,-1)),
-    totalRow,perfect?h("p",{class:"perfect-day"},S.practice?"Perfect round":"Perfect day"):null,
+    totalRow,
     S.practice?null:h("div",{class:"statline"},
       h("span",{class:"hot"},h("b",null,String(streak())),"day streak"),
       h("span",null,h("b",null,fmt(bestScore())),"best"),
@@ -1553,7 +1574,9 @@ renderDone=function(celebrate=false){
     big.textContent=fmt(Math.round(total*(1-Math.pow(1-p,3))));
     if(p<1){requestAnimationFrame(roll);return;}
     if(total>=3000)registerInk(totalRow,big,COL.t[5],celebrate);
-    if(celebrate)sfx.close(perfect);
+    if(dayStamp&&celebrate&&!reduceMotion){dayStamp.hidden=false;dayStamp.animate([{transform:"scale(2.1) rotate(-24deg)",opacity:0},{transform:"scale(.92) rotate(-9deg)",opacity:1,offset:.6},{transform:"scale(1) rotate(-11deg)"}],{duration:tier.big?520:420,easing:"cubic-bezier(.2,.7,.25,1)"});
+      const card=dayStamp.closest(".card");if(card&&tier.big)setTimeout(()=>card.animate([{transform:"translateY(0)"},{transform:"translateY(5px)"},{transform:"translateY(-2px)"},{transform:"translateY(0)"}],{duration:260,easing:"ease-out"}),300);}
+    if(celebrate)setTimeout(()=>sfx.close(perfect||(tier&&tier.top==="GREAT")),dayStamp?300:0);
   };
   if(dur)requestAnimationFrame(roll);else roll(t0);
   setStage("md",false);GL.dim=0;GL.spin=false;
