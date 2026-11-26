@@ -347,7 +347,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pp-todo summary{cursor:pointer;font-weight:800;color:var(--pp-ink)}.pp-todo p{margin:8px 0 0;color:var(--pp-muted);font-size:14px;line-height:1.5}
 .pp-album{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:14px;justify-items:center}
 .pp-seal{background:none;border:0;padding:0;color:#285180;cursor:pointer;transform:rotate(-4deg)}
-.pp-seal:nth-child(2n){transform:rotate(3deg);color:#22664D}.pp-seal:nth-child(3n){color:var(--pp-brass)}
+.pp-seal:nth-child(2n){transform:rotate(3deg)}
 /* landmark sets */
 .pp-sets{display:flex;flex-direction:column;gap:16px}
 .pp-set-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--pp-rule);padding-bottom:6px;margin-bottom:10px}
@@ -435,7 +435,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pc{position:relative;width:min(100%,440px);aspect-ratio:1.5;margin:6px auto 0;cursor:pointer;perspective:1100px;-webkit-tap-highlight-color:transparent;outline-offset:6px}
 .pc-flip{position:absolute;inset:0;transform:rotateY(0deg);transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.2,1);will-change:transform}
 .pc.flipped .pc-flip{transform:rotateY(180deg)}
-.pc-face{position:absolute;inset:0;transform:rotateY(0deg);backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#F6EEDD;border-radius:4px;box-shadow:0 1px 0 #D9CDB5,4px 6px 0 var(--shadow);color:#22477C}
+.pc-face{position:absolute;inset:0;transform:rotateY(0deg);backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#F6EEDD;border-radius:4px;box-shadow:0 1px 0 #D9CDB5,4px 6px 0 var(--shadow);color:var(--ink,#22477C)}
 .pc-front{display:grid;place-items:center;outline:1.5px solid #D9CDB5;outline-offset:-12px}
 .pc-front svg{width:52%;height:auto}
 .pc-back{transform:rotateY(180deg);display:grid;grid-template-columns:1.25fr 1fr;padding:18px 18px 16px}
@@ -447,7 +447,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pc-addr i{display:block;border-bottom:1.5px solid #C9BCA2;font-style:normal;font-size:clamp(11px,3.1vw,13px);font-weight:700;color:#3D4A63;padding-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:clip}
 .pc-addr .pc-country{font-weight:900;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(10px,2.8vw,12px)}
 .pc-cancel{position:absolute;top:12px;right:44px;width:66px;height:30px;opacity:.55;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 66 30'%3E%3Cg fill='none' stroke='%2322477C' stroke-width='1.6'%3E%3Cpath d='M0 6q8-5 16 0t16 0 16 0 18 0'/%3E%3Cpath d='M0 15q8-5 16 0t16 0 16 0 18 0'/%3E%3Cpath d='M0 24q8-5 16 0t16 0 16 0 18 0'/%3E%3C/g%3E%3C/svg%3E");background-repeat:no-repeat;background-size:100% 100%;pointer-events:none}
-.pc-stamp{position:absolute;top:0;right:0;width:54px;height:62px;display:grid;place-items:center;border:1.5px dashed #B5A88E;color:#22477C}
+.pc-stamp{position:absolute;top:0;right:0;width:54px;height:62px;display:grid;place-items:center;border:1.5px dashed #B5A88E;color:var(--ink,#22477C)}
 .pc-stamp svg{width:46px;height:46px}
 .pc-tip{text-align:center;color:var(--muted)!important}
 @media (prefers-reduced-motion:reduce){.pc-flip{transition:none}}
@@ -1755,6 +1755,9 @@ function earnPassport(q,cid,k,a){
 }
 
 /* landmark art: a round double-ring stamp with the place drawn inside */
+// each postcard has one ink, fixed by its name, used in the album and on the card itself
+const INKS=["#285180","#22664D","#865410"];
+const inkFor=key=>{let n=0;for(const ch of String(key))n=(n*31+ch.charCodeAt(0))>>>0;return INKS[n%INKS.length];};
 function cardArt(card,size=120){
   // drawn in a fixed 120-unit space so the art and lettering scale together and stay inside the ring
   const ns="http://www.w3.org/2000/svg",V=120,r=60,ringIn=r-9;
@@ -1850,7 +1853,7 @@ function passportPages(room=380,measure=null){
   const setEl=(g,at)=>h("div",{class:"pp-set"},
       h("div",{class:"pp-set-h"},h("b",null,SET_NAME[g.kind]),h("em",null,`${g.mine}/${g.keys.length}`)),
       h("div",{class:"pp-album"},g.keys.map(key=>{const c=PROF.cards[key];if(!c)return h("span",{class:"pp-seal pp-empty","aria-label":"Not found yet"},h("i",null,"?"));
-        const bt=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key,at),"aria-label":c.name+" postcard"});bt.innerHTML=cardArt(c,84);return bt;})));
+        const bt=h("button",{type:"button",class:"pp-seal",style:"color:"+inkFor(key),onclick:()=>openPostcard(key,at),"aria-label":c.name+" postcard"});bt.innerHTML=cardArt(c,84);return bt;})));
   // each set is measured on this screen, and a page takes sets until the next one would run past its foot
   const GAP=12;let cur=[],used=0;
   const flush=()=>{if(cur.length){const group=cur,at=pages.length;pages.push({title:"Postcards",build:()=>h("div",{class:"pp-pagebody"},...group.map(g=>setEl(g,at)))});}cur=[];used=0;};
@@ -1879,7 +1882,7 @@ renderPassport=function(page=0){
 function openPostcard(key,fromPage=0){
   const c=PROF.cards[key];if(!c)return;
   const date=new Date(c.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
-  const card=h("div",{class:"pc",role:"button",tabindex:"0","aria-label":"Flip the postcard"});const flip=h("div",{class:"pc-flip"});
+  const card=h("div",{class:"pc",style:"--ink:"+inkFor(key),role:"button",tabindex:"0","aria-label":"Flip the postcard"});const flip=h("div",{class:"pc-flip"});
   const front=h("div",{class:"pc-face pc-front"}),stamp=h("span",{class:"pc-stamp"});
   const back=h("div",{class:"pc-face pc-back"},
     h("div",{class:"pc-msg"},h("p",{class:"pc-date"},date),h("p",null,factFor(key)||c.note),h("p",{class:"pc-by"},`Found with ${C[c.by]?.name||""}`)),
