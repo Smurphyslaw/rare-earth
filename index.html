@@ -420,7 +420,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pp-page::before{content:"";position:absolute;inset:0 auto 0 0;width:20px;background:linear-gradient(90deg,rgba(21,40,73,.18),transparent);pointer-events:none}
 .pp-page::after{content:"";position:absolute;top:12px;bottom:12px;left:8px;border-left:1.5px dashed rgba(21,40,73,.25);pointer-events:none}
 .pp-pagehead{display:flex;justify-content:space-between;gap:10px;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--pp-muted);border-bottom:1px solid var(--pp-rule);padding-bottom:8px}
-.pp-pagehead span:last-child{text-align:right}
+.pp-pagehead span{white-space:nowrap}.pp-pagehead span:last-child{text-align:right}
 .pp-pagebody{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:12px;min-height:0}
 .pp-pagefoot{text-align:center;font-size:11px;font-weight:800;color:var(--pp-muted);padding-top:6px}
 .pp-page .pp-h{font-size:clamp(20px,5.6vw,25px)}
@@ -1834,28 +1834,28 @@ function passportShell(title,sub,back,...body){
   setStage("sm",false);GL.dim=0;GL.spin=true;GL.colorOf=id=>PROF.stamps[id]!=null?COL.t[PROF.stamps[id]]:null;
 }
 /* the passport: a small booklet with passport-page proportions, one page at a time */
-function passportPages(){
+function passportPages(room=380){
   const ids=Object.keys(PROF.stamps),golds=ids.filter(id=>PROF.stamps[id]===5).length,cards=Object.keys(PROF.cards);
   const pages=[];
   pages.push({title:"Your map",build:()=>{const cv=h("canvas",{class:"pp-map",role:"img","aria-label":`World map with ${ids.length} stamped countries`});
     const el=h("div",{class:"pp-pagebody"},h("h3",{class:"pp-h"},ids.length?"Places you've found":"Your map is empty"),cv,
       h("div",{class:"pp-counts"},h("span",null,h("b",null,String(ids.length)),ids.length===1?"country":"countries"),h("span",{class:"gold"},h("b",null,String(golds)),"gold"),h("span",null,h("b",null,String(cards.length)),cards.length===1?"postcard":"postcards")),
-      h("p",{class:"pp-note"},"Every country you name is coloured by how high it climbed. Reach the top of a ladder and it turns gold, and you earn a postcard of the place."));
+      h("p",{class:"pp-note"},"Each country is coloured by how high it climbed. Reach the top for gold and a postcard."));
     requestAnimationFrame(()=>{const draw=()=>paperMap(cv,null,null);const ro=new ResizeObserver(()=>{if(cv.isConnected)draw();else ro.disconnect();});ro.observe(cv);draw();});return el;}});
-  // postcard sets, packed onto pages of up to 12 places
+  // postcard sets, packed so each page's sets fit its height (room = the page body's height in px)
   const sets=SET_ORDER.filter(kind=>ALL_CARDS.some(c=>c.kind===kind)||cards.some(k=>PROF.cards[k].kind===kind)).map(kind=>{
     const all=ALL_CARDS.filter(c=>c.kind===kind).map(c=>c.key),mine=cards.filter(k=>PROF.cards[k].kind===kind);return {kind,keys:[...new Set([...mine,...all])],mine:mine.length};});
-  let cur=[],n=0;const flush=()=>{if(cur.length){const group=cur;pages.push({title:group.map(g=>SET_NAME[g.kind]).join(" · "),build:()=>h("div",{class:"pp-pagebody"},...group.map(g=>h("div",{class:"pp-set"},
+  const SET_H=52,ROW_H=72,cost=st=>SET_H+Math.ceil(st.keys.length/4)*ROW_H;
+  let cur=[],n=0;const flush=()=>{if(cur.length){const group=cur,at=pages.length;pages.push({title:"Postcards",build:()=>h("div",{class:"pp-pagebody"},...group.map(g=>h("div",{class:"pp-set"},
       h("div",{class:"pp-set-h"},h("b",null,SET_NAME[g.kind]),h("em",null,`${g.mine}/${g.keys.length}`)),
       h("div",{class:"pp-album"},g.keys.map(key=>{const c=PROF.cards[key];if(!c)return h("span",{class:"pp-seal pp-empty","aria-label":"Not found yet"},h("i",null,"?"));
-        const bt=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key,pages.indexOf(pages.find(p=>p.title===group.map(x=>SET_NAME[x.kind]).join(" · ")))),"aria-label":c.name+" postcard"});bt.innerHTML=cardArt(c,84);return bt;})))))});}cur=[];n=0;};
-  for(const st of sets){if(n&&n+st.keys.length>12)flush();cur.push(st);n+=st.keys.length;}flush();
+        const bt=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key,at),"aria-label":c.name+" postcard"});bt.innerHTML=cardArt(c,84);return bt;})))))});}cur=[];n=0;};
+  for(const st of sets){if(n&&n+cost(st)>room)flush();cur.push(st);n+=cost(st);}flush();
   return pages;
 }
 let PP_PAGE=0;
 renderPassport=function(page=0){
-  const pages=passportPages();PP_PAGE=Math.max(0,Math.min(pages.length-1,page));
-  const pageEl=h("div",{class:"pp-page"});const no=h("span",{class:"pp-no"});const dots=h("div",{class:"pp-dots","aria-hidden":"true"});
+  const pageEl=h("div",{class:"pp-page"});let pages=[];const no=h("span",{class:"pp-no"});const dots=h("div",{class:"pp-dots","aria-hidden":"true"});
   const prev=h("button",{type:"button",class:"btn ghost small",onclick:()=>go(PP_PAGE-1)},"‹ Back");const next=h("button",{type:"button",class:"btn ghost small",onclick:()=>go(PP_PAGE+1)},"Next ›");
   function show(dir){const p=pages[PP_PAGE];pageEl.replaceChildren(h("div",{class:"pp-pagehead"},h("span",null,"Rare Earth · Passport"),h("span",null,p.title)),p.build(),h("div",{class:"pp-pagefoot"},String(PP_PAGE+1)));
     dots.replaceChildren(...pages.map((_,i)=>h("i",{class:i===PP_PAGE?"on":""})));prev.disabled=PP_PAGE===0;next.disabled=PP_PAGE===pages.length-1;
@@ -1865,6 +1865,9 @@ renderPassport=function(page=0){
   let sx=null;pageEl.addEventListener("pointerdown",e=>{sx=e.clientX});pageEl.addEventListener("pointerup",e=>{if(sx!=null&&Math.abs(e.clientX-sx)>50)go(PP_PAGE+(e.clientX<sx?1:-1));sx=null;});
   passportShell("Your passport","Rare Earth",h("button",{class:"btn ghost small",onclick:ppBack},PP_RETURN?"Back":"Close"),
     h("div",{class:"pp-booklet"},pageEl),h("div",{class:"pp-nav"},prev,dots,next));
+  // measure the page body's real height on this screen, then pack the postcard sets to fit it
+  const probe=h("div",{class:"pp-pagebody"});pageEl.replaceChildren(h("div",{class:"pp-pagehead"},h("span",null,"Rare Earth · Passport"),h("span",null,"Postcards")),probe,h("div",{class:"pp-pagefoot"},"1"));
+  pages=passportPages(Math.max(200,probe.clientHeight-20));PP_PAGE=Math.max(0,Math.min(pages.length-1,page));
   show(0);
 };
 /* a postcard on its own: the place on the front, a written back with a stamp box */
