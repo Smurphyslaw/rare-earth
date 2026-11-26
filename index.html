@@ -489,6 +489,9 @@ html,body{overflow-x:clip}
 .rc-who b{font-weight:850;font-variant-numeric:tabular-nums}
 .rc-who .me{color:var(--paper);font-weight:800}
 .rclues{gap:8px}
+
+/* results: why your answer stopped, right above the clue it missed */
+.rc-why{margin:2px 0 3px 1.3em;font-size:13px;line-height:1.45;color:var(--paper);font-weight:600}
 </style>
 </head>
 <body>
@@ -1571,6 +1574,32 @@ renderPlay=function(){
     saveLocal();pushDay();renderReveal(true);if(cid&&!timedOut)sfx.lock();
   }
 };
+// why a country misses a clue, in one plain sentence ("it has 4 land neighbours (…), not 3").
+// Built from the same data that scored it, so the reason always agrees with the points.
+const WHY_CONT={AF:"Africa",AS:"Asia",EU:"Europe",NA:"North America",SA:"South America",OC:"Oceania"};
+const andList=a=>a.length<2?a.join(""):a.slice(0,-1).join(", ")+" and "+a.at(-1);
+const NUMW=["no","one","two","three","four","five","six","seven","eight","nine","ten"];
+function whyNot(q,j,id){
+  const r=q.clues[j].rule,clue=q.clues[j].clue.replace(/^…and /,"").replace(/^./,m=>m.toUpperCase()),hd=HINTS[id]||{},nb=(hd.b||[]).map(x=>C[x]?.name||x).sort();
+  const nbText=n=>n===0?"no land neighbours":`${NUMW[n]||n} land neighbour${n===1?"":"s"}`;
+  if(r.field==="borders"&&r.op==="lengthEq"&&nb.length!==r.value)return `it has ${nbText(nb.length)}${nb.length&&nb.length<=6?" ("+andList(nb)+")":""}, not ${NUMW[r.value]||r.value}`;
+  if(r.field==="borders"&&r.op==="has")return `it doesn't border ${C[r.value]?.name||r.value}${nb.length===0?". It has no land neighbours":nb.length===1?". Its only neighbour is "+nb[0]:nb.length<=5?". Its neighbours are "+andList(nb):""}`;
+  if(r.field==="continents"){const mine=(C[id].cont||[]).map(c=>WHY_CONT[c]).filter(Boolean),want=r.op==="hasAny"?"the Americas":WHY_CONT[r.value];if(mine.length&&want)return `it's in ${andList(mine)}, not ${want}`;}
+  if(r.field==="landlocked"&&r.value===true)return "it has a coastline";
+  if(r.field==="islandCountry")return r.value===true?"it isn't an island country":"it's an island country";
+  if(r.field==="eu"&&r.value===false)return "it's in the EU";
+  const T=[
+    [/^Is not (.*)$/,"it's $1"],[/^Is (.*)$/,"it isn't $1"],[/^Has (.*)$/,"it doesn't have $1"],[/^Uses (.*)$/,"it doesn't use $1"],
+    [/^Touches (.*)$/,"it doesn't touch $1"],[/^Shares (.*)$/,"it doesn't share $1"],[/^Borders (.*)$/,"it doesn't border $1"],
+    [/^Its money is (.*)$/,"its money isn't $1"],[/^Its capital is (.*)$/,"its capital isn't $1"],[/^Its capital shares (.*)$/,"its capital doesn't share $1"],
+    [/^Its government sits outside the capital$/,"its government sits in its capital"],[/^Its flag isn't a rectangle$/,"its flag is a rectangle"],
+    [/^Its flag differs front and back$/,"its flag is the same on both sides"],[/^(.*) is an official language$/,"$1 isn't an official language there"],
+    [/^King Charles is its king$/,"King Charles isn't its king"],[/^The (.*) crosses its land$/,"the $1 doesn't cross it"],
+  ];
+  for(const [re,to] of T)if(re.test(clue))return clue.replace(re,to);
+  return `it doesn't fit “${clue}”`;
+}
+const missLine=(q,k,id)=>{const n=C[id].name;return k<0?`${n} misses the first clue: ${whyNot(q,0,id)}.`:`${n} stops at step ${k+1}: ${whyNot(q,k+1,id)}.`;};
 // the three hints, all about one of the 1,000-point answers
 const COMPASS=(id)=>{const k=C[id].cont[0],pts=LIST.filter(c=>c.cont.includes(k)).map(c=>GL.cent[c.id]).filter(Boolean),p=GL.cent[id];if(!p||pts.length<3)return "";
   const xs=pts.map(v=>v[0]).sort((a,b)=>a-b),ys=pts.map(v=>v[1]).sort((a,b)=>a-b),q3=(a,f)=>a[Math.floor(f*(a.length-1))];
@@ -1609,7 +1638,7 @@ renderReveal=function(animate=true){
   const tally=h("strong",{class:"number inked tally",style:"--tone:"+(k>=0?(a.t>=0?COL.t[a.t]:COL.miss):COL.miss)},animate?"+0":"+"+fmt(a.pts??ptsAt(q,k)));
   const explain=h("p",{class:"explain"});
   const hintNote=a.h&&a.pts>0?h("p",{class:"explain hint-cost"},k===q.clues.length-1&&a.t!==5?`With hints, this one is worth ${fmt(a.pts)}. Gold and a postcard allow one hint at most.`:k===q.clues.length-1?`With 1 hint, this one is worth ${fmt(a.pts)}. Still gold.`:`With hints, this one is worth ${fmt(a.pts)}.`):null;
-  if(id&&k<n-1){const nxt=q.answers[k+1].map(x=>C[x].name);explain.textContent=k<0?`${C[id].name} doesn't fit the first clue.`:`${C[id].name} stops at step ${k+1}. ${nxt.length<=4?"Step "+(k+2)+": "+nxt.join(", "):nxt.length+" countries reach step "+(k+2)}.`;}
+  if(id&&k<n-1){const nxt=q.answers[k+1].map(x=>C[x].name);explain.textContent=missLine(q,k,id)+(k<0?"":` ${nxt.length<=4?"Step "+(k+2)+": "+nxt.join(", "):nxt.length+" countries reach step "+(k+2)}.`);}
   else if(!id)explain.textContent=a.to?"No answer in time.":"No answer this time.";
   if(animate)explain.hidden=true;
   const stampEl=(a.n||a.gold||a.card)?passportStrip(q,a,animate):null;
@@ -1695,6 +1724,7 @@ renderDone=function(celebrate=false){
         h("ol",{class:"rclues"},q.clues.map((c,j)=>{const stop=q.answers[j].filter(x=>!(q.answers[j+1]||[]).includes(x)).sort((x,y)=>C[x].name.localeCompare(C[y].name));
           return h("li",{class:j<=k?"on":j===k+1&&a.c?"miss":""},
             h("div",{class:"rc-line"},h("span",null,c.clue.replace(/^…and /,"").replace(/^./,m=>m.toUpperCase())),h("em",null,`${q.answers[j].length} fit`)),
+            j===k+1&&a.c?h("p",{class:"rc-why"},missLine(q,k,a.c)):null,
             stop.length?h("p",{class:"rc-who"},h("b",{style:"color:"+COL.t[tierAt(q,j)]},`${fmt(ptsAt(q,j))}${j===n-1?" (top)":""}:`)," ",
               ...stop.flatMap((x,i)=>[i?", ":"",x===a.c?h("span",{class:"me"},C[x].name):C[x].name])):null);})),
         fact?h("p",{class:"why"},fact):null));});
