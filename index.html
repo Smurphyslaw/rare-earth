@@ -317,7 +317,13 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pp-wrap{display:flex;flex-direction:column;gap:14px;min-width:0}
 .pp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .pp-kicker{color:var(--t5)!important;text-transform:uppercase;letter-spacing:.1em;font-size:12px}
-.pp-book{--pp-paper:#F2ECDF;--pp-ink:#152849;--pp-muted:#54627A;--pp-rule:#C9C0AF;--pp-brass:#865410;background:var(--pp-paper);color:var(--pp-ink);border:7px solid #263E46;border-radius:12px;box-shadow:0 5px #D2C6AF,0 7px #8D8372,0 13px 0 var(--shadow);overflow:hidden}
+/* the passport page: cover showing at the spine, a stitched fold, page edges stacked on the right */
+.pp-book{--pp-paper:#F2ECDF;--pp-ink:#152849;--pp-muted:#54627A;--pp-rule:#C9C0AF;--pp-brass:#865410;position:relative;background:var(--pp-paper);color:var(--pp-ink);
+  border-left:9px solid #263E46;border-radius:5px 10px 10px 5px;padding-left:16px;
+  box-shadow:2px 0 0 #E4DAC6,4px 1px 0 #D6CAB2,6px 2px 0 #C7B99D,9px 5px 0 var(--shadow);overflow:hidden}
+.pp-book::before{content:"";position:absolute;top:0;bottom:0;left:0;width:22px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(21,40,73,.22),rgba(21,40,73,.07) 45%,transparent)}
+.pp-book::after{content:"";position:absolute;top:14px;bottom:14px;left:7px;border-left:1.5px dashed rgba(21,40,73,.28);pointer-events:none}
 .pp-sect{padding:14px 16px 18px;border-top:1px dashed var(--pp-rule);display:flex;flex-direction:column;gap:12px;min-width:0}
 .pp-sect:first-child{border-top:0}
 .pp-over{display:flex;justify-content:space-between;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--pp-muted)}
@@ -415,6 +421,14 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .hint-list[hidden]{display:none}
 .hint-cost{color:var(--t5)!important}
 .rhint{font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--t5);border:1.5px solid currentColor;border-radius:3px;padding:0 5px}
+
+/* postcard tucked into the page with photo corners */
+.pp-postcard::after{content:"";position:absolute;inset:-5px;pointer-events:none;z-index:3;
+  background:
+    linear-gradient(135deg,#263E46 0 50%,transparent 50.5%) top left/26px 26px no-repeat,
+    linear-gradient(225deg,#263E46 0 50%,transparent 50.5%) top right/26px 26px no-repeat,
+    linear-gradient(45deg,#263E46 0 50%,transparent 50.5%) bottom left/26px 26px no-repeat,
+    linear-gradient(315deg,#263E46 0 50%,transparent 50.5%) bottom right/26px 26px no-repeat}
 </style>
 </head>
 <body>
