@@ -348,16 +348,6 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .pp-album{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:14px;justify-items:center}
 .pp-seal{background:none;border:0;padding:0;color:#285180;cursor:pointer;transform:rotate(-4deg)}
 .pp-seal:nth-child(2n){transform:rotate(3deg);color:#22664D}.pp-seal:nth-child(3n){color:var(--pp-brass)}
-/* postcard flip: one card that turns over (works in iOS Safari: perspective on the parent, preserve-3d on the turning layer) */
-.pp-postcard{position:relative;width:min(300px,100%);aspect-ratio:1.35;margin:0 auto;cursor:pointer;perspective:1000px;-webkit-perspective:1000px;color:var(--pp-ink);-webkit-tap-highlight-color:transparent;outline-offset:4px}
-.pp-flip{position:absolute;inset:0;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.2,1)}
-.pp-postcard.flipped .pp-flip{transform:rotateY(180deg)}
-.pp-front,.pp-back{position:absolute;inset:0;display:grid;place-items:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--pp-rule);background:#F6EDDC;box-shadow:3px 3px #D6CAB5;border-radius:3px;padding:16px}
-.pp-front{color:#285180}
-.pp-front svg{width:min(170px,62%);height:auto}
-.pp-back{transform:rotateY(180deg);align-content:start;justify-items:start;gap:10px;text-align:left;padding:18px 20px;border-left:3px solid var(--pp-brass)}
-.pp-back p{margin:0;color:var(--pp-muted);line-height:1.45;font-size:14.5px}.pp-back .pp-by{font-weight:800;color:var(--pp-brass)}
-.pp-back .pp-over{width:100%}
 /* landmark sets */
 .pp-sets{display:flex;flex-direction:column;gap:16px}
 .pp-set-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--pp-rule);padding-bottom:6px;margin-bottom:10px}
@@ -422,13 +412,46 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .hint-cost{color:var(--t5)!important}
 .rhint{font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--t5);border:1.5px solid currentColor;border-radius:3px;padding:0 5px}
 
-/* postcard tucked into the page with photo corners */
-.pp-postcard::after{content:"";position:absolute;inset:-5px;pointer-events:none;z-index:3;
-  background:
-    linear-gradient(135deg,#263E46 0 50%,transparent 50.5%) top left/26px 26px no-repeat,
-    linear-gradient(225deg,#263E46 0 50%,transparent 50.5%) top right/26px 26px no-repeat,
-    linear-gradient(45deg,#263E46 0 50%,transparent 50.5%) bottom left/26px 26px no-repeat,
-    linear-gradient(315deg,#263E46 0 50%,transparent 50.5%) bottom right/26px 26px no-repeat}
+
+
+/* passport booklet: passport-page proportions, cover at the spine, one page at a time */
+.pp-booklet{--pp-paper:#F2ECDF;--pp-ink:#152849;--pp-muted:#54627A;--pp-rule:#C9C0AF;--pp-brass:#865410;width:min(100%,430px);margin:0 auto;padding:6px 0 6px 10px;border-radius:12px;background:#263E46;box-shadow:0 8px 0 var(--shadow)}
+.pp-page{position:relative;aspect-ratio:.72;display:flex;flex-direction:column;background:var(--pp-paper);color:var(--pp-ink);border-radius:4px 9px 9px 4px;padding:16px 18px 12px 26px;box-shadow:3px 0 0 #E2D7C2,5px 0 0 #CFC2A8;overflow:hidden;touch-action:pan-y}
+.pp-page::before{content:"";position:absolute;inset:0 auto 0 0;width:20px;background:linear-gradient(90deg,rgba(21,40,73,.18),transparent);pointer-events:none}
+.pp-page::after{content:"";position:absolute;top:12px;bottom:12px;left:8px;border-left:1.5px dashed rgba(21,40,73,.25);pointer-events:none}
+.pp-pagehead{display:flex;justify-content:space-between;gap:10px;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--pp-muted);border-bottom:1px solid var(--pp-rule);padding-bottom:8px}
+.pp-pagehead span:last-child{text-align:right}
+.pp-pagebody{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:12px;min-height:0}
+.pp-pagefoot{text-align:center;font-size:11px;font-weight:800;color:var(--pp-muted);padding-top:6px}
+.pp-page .pp-h{font-size:clamp(20px,5.6vw,25px)}
+.pp-page .pp-album{grid-template-columns:repeat(4,1fr);gap:8px;justify-items:center}
+.pp-page .pp-empty{width:64px;height:64px}.pp-page .pp-empty i{font-size:18px}
+.pp-page .pp-seal svg{width:64px;height:64px}
+.pp-page .pp-set-h{margin-bottom:8px}
+.pp-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;width:min(100%,430px);margin:0 auto}
+.pp-dots{display:flex;gap:6px}.pp-dots i{width:7px;height:7px;border-radius:50%;background:var(--line-strong)}.pp-dots i.on{background:var(--paper)}
+.pp-nav .btn:disabled{opacity:.35;cursor:default}
+/* a standalone postcard: plain card stock, the place on the front, a written back */
+.pc{position:relative;width:min(100%,440px);aspect-ratio:1.5;margin:6px auto 0;cursor:pointer;perspective:1100px;-webkit-tap-highlight-color:transparent;outline-offset:6px}
+.pc-flip{position:absolute;inset:0;transform:rotateY(0deg);transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.2,1);will-change:transform}
+.pc.flipped .pc-flip{transform:rotateY(180deg)}
+.pc-face{position:absolute;inset:0;transform:rotateY(0deg);backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#F6EEDD;border-radius:4px;box-shadow:0 1px 0 #D9CDB5,4px 6px 0 var(--shadow);color:#22477C}
+.pc-front{display:grid;place-items:center;outline:1.5px solid #D9CDB5;outline-offset:-12px}
+.pc-front svg{width:52%;height:auto}
+.pc-back{transform:rotateY(180deg);display:grid;grid-template-columns:1.25fr 1fr;padding:18px 18px 16px}
+.pc-msg{padding-right:14px;border-right:1.5px solid #C9BCA2;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pc-msg p{margin:0;color:#3D4A63;font-size:clamp(12.5px,3.4vw,14.5px);line-height:1.4}
+.pc-date{font-size:11px!important;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#865410!important}
+.pc-by{font-weight:800;color:#865410!important}
+.pc-addr{position:relative;padding-left:14px;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding-bottom:10px}
+.pc-addr i{display:block;border-bottom:1.5px solid #C9BCA2;font-style:normal;font-size:12.5px;font-weight:700;color:#3D4A63;padding-bottom:3px;min-height:18px}
+.pc-stamp{position:absolute;top:0;right:0;width:54px;height:62px;display:grid;place-items:center;border:1.5px dashed #B5A88E;color:#22477C}
+.pc-stamp svg{width:46px;height:46px}
+.pc-tip{text-align:center;color:var(--muted)!important}
+@media (prefers-reduced-motion:reduce){.pc-flip{transition:none}}
+
+/* just enough room to lift the clues above a phone keyboard */
+body.typing .wrap{padding-bottom:45vh}
 </style>
 </head>
 <body>
@@ -949,7 +972,7 @@ function drawFrame(t){
       ctx.beginPath();GL.path(GL.grat);ctx.strokeStyle=rgba(COL.paper,.14);ctx.lineWidth=.7;ctx.stroke();
       if(GL.ready){
         ctx.beginPath();GL.feats.forEach(f=>GL.path(f));ctx.fillStyle=COL.land;ctx.globalAlpha=1-GL.dim*.6;ctx.fill();ctx.globalAlpha=1;
-        GL.feats.forEach(f=>{const c=GL.colorOf(f.properties.r);if(!c)return;ctx.beginPath();GL.path(f);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=1.1;ctx.lineJoin="round";ctx.stroke();});
+        GL.feats.forEach(f=>{const c=GL.colorOf(f.properties.r);if(!c)return;ctx.beginPath();GL.path(f);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=.9;ctx.lineJoin="round";ctx.stroke();});
         ctx.beginPath();GL.path(GL.borders);ctx.strokeStyle=COL.edge;ctx.lineWidth=.8;ctx.stroke();
         if(GL.hl&&GL.byId.has(GL.hl)){ctx.beginPath();GL.byId.get(GL.hl).forEach(f=>GL.path(f));ctx.strokeStyle=COL.edge;ctx.lineWidth=3;ctx.lineJoin="round";ctx.stroke();}
         for(const id in DOTS){const ll=DOTS[id];if(!visible(ll))continue;const [x,y]=GL.proj(ll),c=GL.colorOf(id);ctx.beginPath();ctx.arc(x,y,c?4.4:1.9,0,TAU);ctx.fillStyle=c||rgba(COL.land,.8*(1-GL.dim*.6));ctx.fill();if(c){ctx.strokeStyle=COL.edge;ctx.lineWidth=1.6;ctx.stroke()}}
@@ -1475,7 +1498,8 @@ renderPlay=function(){
   layoutRail(wrap);
   setStage("play",false);GL.dim=1;GL.spin=true;GL.speed=.014;GL.colorOf=()=>null;
   if(!TOUCH)input.focus({preventScroll:true});
-  input.addEventListener("focus",()=>{if(!TOUCH)return;document.body.classList.add("typing");setTimeout(()=>{const p=input.closest(".card")?.querySelector(".prompt");if(p)window.scrollTo({top:Math.max(0,p.getBoundingClientRect().top+window.scrollY-10),behavior:"auto"});},250);});
+  input.addEventListener("blur",()=>setTimeout(()=>{if(document.activeElement!==input)document.body.classList.remove("typing")},150));
+  input.addEventListener("focus",()=>{if(!TOUCH||innerWidth>520)return;document.body.classList.add("typing");setTimeout(()=>{const p=input.closest(".card")?.querySelector(".prompt");if(p)window.scrollTo({top:Math.max(0,p.getBoundingClientRect().top+window.scrollY-10),behavior:"auto"});},250);});
   let left0=SECS_L*1000;
   if(!S.practice){const o=S.daily.open;if(o&&o.p===q.id&&o.end>0)left0=Math.max(0,o.end-Date.now());else{S.daily.open={p:q.id,end:Date.now()+SECS_L*1000};saveLocal();}}
   timer.end=performance.now()+left0;let lastSec=Math.ceil(left0/1000);
@@ -1778,33 +1802,56 @@ function passportShell(title,sub,back,...body){
   const ret=PP_RETURN?h("button",{type:"button",class:"btn wide pp-return",onclick:ppBack},PP_RETURN.label):null;
   setScreen("passport",h("div",{class:"pp-wrap enter"},
     h("div",{class:"pp-head"},h("div",null,h("div",{class:"eyebrow pp-kicker"},sub),h("h2",{class:"prompt"},title)),back),
-    h("div",{class:"pp-book"},...body),ret));
+    ...body,ret));
   setStage("sm",false);GL.dim=0;GL.spin=true;GL.colorOf=id=>PROF.stamps[id]!=null?COL.t[PROF.stamps[id]]:null;
 }
-renderPassport=function(){
+/* the passport: a small booklet with passport-page proportions, one page at a time */
+function passportPages(){
   const ids=Object.keys(PROF.stamps),golds=ids.filter(id=>PROF.stamps[id]===5).length,cards=Object.keys(PROF.cards);
-  const cv=h("canvas",{class:"pp-map",role:"img","aria-label":`World map with ${ids.length} stamped countries`});
-  passportShell("Your passport","Rare Earth",h("button",{class:"btn ghost small",onclick:ppBack},PP_RETURN?"Back":"Close"),
-    sect(1,"Your map",h("h3",{class:"pp-h"},ids.length?"Places you've found":"Your map is empty"),cv,
+  const pages=[];
+  pages.push({title:"Your map",build:()=>{const cv=h("canvas",{class:"pp-map",role:"img","aria-label":`World map with ${ids.length} stamped countries`});
+    const el=h("div",{class:"pp-pagebody"},h("h3",{class:"pp-h"},ids.length?"Places you've found":"Your map is empty"),cv,
       h("div",{class:"pp-counts"},h("span",null,h("b",null,String(ids.length)),ids.length===1?"country":"countries"),h("span",{class:"gold"},h("b",null,String(golds)),"gold"),h("span",null,h("b",null,String(cards.length)),cards.length===1?"postcard":"postcards")),
-      h("p",{class:"pp-note"},ids.length?"Every country you name is coloured by how high it climbed. Reach the top and it turns gold.":"Every country you name lands on this map, coloured by how high it climbed. Reach the top of a ladder and it turns gold.")),
-    sect(2,"Postcards",h("p",{class:"pp-note"},"Each 1,000-point answer earns the postcard for the place its ladder ends on. Collect every lake, line, river, island and sea."),
-      h("div",{class:"pp-sets"},SET_ORDER.filter(kind=>ALL_CARDS.some(c=>c.kind===kind)||cards.some(k=>PROF.cards[k].kind===kind)).map(kind=>{
-        const all=ALL_CARDS.filter(c=>c.kind===kind).map(c=>c.key),mine=cards.filter(k=>PROF.cards[k].kind===kind),keys=[...new Set([...mine,...all])];
-        return h("div",{class:"pp-set"},h("div",{class:"pp-set-h"},h("b",null,SET_NAME[kind]),h("em",null,`${mine.length}/${keys.length}`)),
-          h("div",{class:"pp-album"},keys.map(key=>{const c=PROF.cards[key];
-            if(!c)return h("span",{class:"pp-seal pp-empty","aria-label":"Not found yet"},h("i",null,"?"));
-            const b=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key),"aria-label":c.name+" postcard"});b.innerHTML=cardArt(c,92);return b;})));}))));
-  const draw=()=>paperMap(cv,null,null);const ro=new ResizeObserver(()=>{if(cv.isConnected)draw();else ro.disconnect();});ro.observe(cv);draw();
+      h("p",{class:"pp-note"},"Every country you name is coloured by how high it climbed. Reach the top of a ladder and it turns gold, and you earn a postcard of the place."));
+    requestAnimationFrame(()=>{const draw=()=>paperMap(cv,null,null);const ro=new ResizeObserver(()=>{if(cv.isConnected)draw();else ro.disconnect();});ro.observe(cv);draw();});return el;}});
+  // postcard sets, packed onto pages of up to 12 places
+  const sets=SET_ORDER.filter(kind=>ALL_CARDS.some(c=>c.kind===kind)||cards.some(k=>PROF.cards[k].kind===kind)).map(kind=>{
+    const all=ALL_CARDS.filter(c=>c.kind===kind).map(c=>c.key),mine=cards.filter(k=>PROF.cards[k].kind===kind);return {kind,keys:[...new Set([...mine,...all])],mine:mine.length};});
+  let cur=[],n=0;const flush=()=>{if(cur.length){const group=cur;pages.push({title:group.map(g=>SET_NAME[g.kind]).join(" · "),build:()=>h("div",{class:"pp-pagebody"},...group.map(g=>h("div",{class:"pp-set"},
+      h("div",{class:"pp-set-h"},h("b",null,SET_NAME[g.kind]),h("em",null,`${g.mine}/${g.keys.length}`)),
+      h("div",{class:"pp-album"},g.keys.map(key=>{const c=PROF.cards[key];if(!c)return h("span",{class:"pp-seal pp-empty","aria-label":"Not found yet"},h("i",null,"?"));
+        const bt=h("button",{type:"button",class:"pp-seal",onclick:()=>openPostcard(key,pages.indexOf(pages.find(p=>p.title===group.map(x=>SET_NAME[x.kind]).join(" · ")))),"aria-label":c.name+" postcard"});bt.innerHTML=cardArt(c,84);return bt;})))))});}cur=[];n=0;};
+  for(const st of sets){if(n&&n+st.keys.length>12)flush();cur.push(st);n+=st.keys.length;}flush();
+  return pages;
+}
+let PP_PAGE=0;
+renderPassport=function(page=0){
+  const pages=passportPages();PP_PAGE=Math.max(0,Math.min(pages.length-1,page));
+  const pageEl=h("div",{class:"pp-page"});const no=h("span",{class:"pp-no"});const dots=h("div",{class:"pp-dots","aria-hidden":"true"});
+  const prev=h("button",{type:"button",class:"btn ghost small",onclick:()=>go(PP_PAGE-1)},"‹ Back");const next=h("button",{type:"button",class:"btn ghost small",onclick:()=>go(PP_PAGE+1)},"Next ›");
+  function show(dir){const p=pages[PP_PAGE];pageEl.replaceChildren(h("div",{class:"pp-pagehead"},h("span",null,"Rare Earth · Passport"),h("span",null,p.title)),p.build(),h("div",{class:"pp-pagefoot"},String(PP_PAGE+1)));
+    dots.replaceChildren(...pages.map((_,i)=>h("i",{class:i===PP_PAGE?"on":""})));prev.disabled=PP_PAGE===0;next.disabled=PP_PAGE===pages.length-1;
+    if(dir&&!reduceMotion&&pageEl.animate)pageEl.animate([{transform:`translateX(${dir*24}px)`,opacity:0},{transform:"translateX(0)",opacity:1}],{duration:260,easing:"cubic-bezier(.2,.7,.25,1)"});}
+  function go(i){if(i<0||i>=pages.length)return;const d=i>PP_PAGE?1:-1;PP_PAGE=i;sfx.lock();show(d);}
+  // swipe between pages on phones
+  let sx=null;pageEl.addEventListener("pointerdown",e=>{sx=e.clientX});pageEl.addEventListener("pointerup",e=>{if(sx!=null&&Math.abs(e.clientX-sx)>50)go(PP_PAGE+(e.clientX<sx?1:-1));sx=null;});
+  passportShell("Your passport","Rare Earth",h("button",{class:"btn ghost small",onclick:ppBack},PP_RETURN?"Back":"Close"),
+    h("div",{class:"pp-booklet"},pageEl),h("div",{class:"pp-nav"},prev,dots,next));
+  show(0);
 };
-function openPostcard(key){
+/* a postcard on its own: the place on the front, a written back with a stamp box */
+function openPostcard(key,fromPage=0){
   const c=PROF.cards[key];if(!c)return;
-  const card=h("div",{class:"pp-postcard",role:"button",tabindex:"0","aria-label":"Flip the postcard"});const flip=h("div",{class:"pp-flip"});
-  const front=h("div",{class:"pp-front"}),back=h("div",{class:"pp-back"},h("div",{class:"pp-over"},h("span",null,"Field note"),h("span",null,new Date(c.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}))),h("p",null,factFor(key)||c.note),h("p",{class:"pp-by"},`Found with ${C[c.by]?.name||""}`));
-  front.innerHTML=cardArt(c,170);flip.append(front,back);card.append(flip);
+  const date=new Date(c.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+  const card=h("div",{class:"pc",role:"button",tabindex:"0","aria-label":"Flip the postcard"});const flip=h("div",{class:"pc-flip"});
+  const front=h("div",{class:"pc-face pc-front"}),stamp=h("span",{class:"pc-stamp"});
+  const back=h("div",{class:"pc-face pc-back"},
+    h("div",{class:"pc-msg"},h("p",{class:"pc-date"},date),h("p",null,factFor(key)||c.note),h("p",{class:"pc-by"},`Found with ${C[c.by]?.name||""}`)),
+    h("div",{class:"pc-addr"},stamp,h("i",null,"Your passport"),h("i",null,"Rare Earth"),h("i",null,"")));
+  front.innerHTML=cardArt(c,150);stamp.innerHTML=cardArt(c,46);flip.append(front,back);card.append(flip);
   const turn=()=>{card.classList.toggle("flipped");sfx.lock();};
   card.addEventListener("click",turn);card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();turn();}});
-  passportShell(c.name,"Postcard",h("button",{class:"btn ghost small",onclick:()=>renderPassport()},"Album"),sect(1,"Postcard",card,h("p",{class:"pp-note",style:"text-align:center"},"Tap the card to flip it.")));
+  passportShell(c.name,"Postcard",h("button",{class:"btn ghost small",onclick:()=>renderPassport(fromPage)},"Passport"),card,h("p",{class:"pp-note pc-tip"},"Tap the card to turn it over."));
 }
 
 renderFoot();
