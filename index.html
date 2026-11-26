@@ -400,7 +400,7 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .rrow .row-more{padding:2px 0 16px 34px}
 .rclues{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:5px;counter-reset:c}
 .rclues li{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted);counter-increment:c}
-.rclues li span::before{content:counter(c) ". ";font-weight:800}
+.rclues .rc-line>span::before{content:counter(c) ". ";font-weight:800}
 .rclues li.on{color:var(--paper)}
 .rclues li em{font-style:normal;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
 .ralso{margin:0;color:var(--muted);font-size:13.5px}
@@ -481,6 +481,14 @@ body.typing .wrap{padding-bottom:45vh}
 html,body{overflow-x:clip}
 /* "25 postcards" stays on one line */
 .pp-goal b{white-space:nowrap}
+
+/* results details: under each clue, every country that stops there and what it scores */
+.rclues li{display:block}
+.rc-line{display:flex;justify-content:space-between;gap:10px}
+.rc-who{margin:3px 0 4px 1.3em;font-size:13px;line-height:1.5;color:var(--muted);font-weight:500}
+.rc-who b{font-weight:850;font-variant-numeric:tabular-nums}
+.rc-who .me{color:var(--paper);font-weight:800}
+.rclues{gap:8px}
 </style>
 </head>
 <body>
@@ -1682,9 +1690,11 @@ renderDone=function(celebrate=false){
         h("div",{class:"rmid"},h("b",null,a.c?C[a.c].name:a.to?"Time ran out":"Passed"),steps,a.h?h("small",{class:"rhint"},`${a.h} ${a.h===1?"hint":"hints"}`):null),
         h("strong",{class:"number inked p",style:"--tone:"+(a.t>=0?COL.t[a.t]:COL.miss)},fmt(a.pts))),
       h("div",{class:"row-more"},
-        h("ol",{class:"rclues"},q.clues.map((c,j)=>h("li",{class:j<=k?"on":j===k+1&&a.c?"miss":""},h("span",null,c.clue.replace(/^…and /,"").replace(/^./,m=>m.toUpperCase())),h("em",null,`${q.answers[j].length} fit`)))),
-        h("p",{class:"row-more-h"},(top.length>1?"Top answers: ":"Top answer: ")+top.map(x=>C[x].name).join(", ")),
-        h("p",{class:"ralso"},"Also fit the first clue: "+q.answers[0].filter(x=>!top.includes(x)&&x!==a.c).slice(0,10).map(x=>C[x].name).join(", ")+(q.answers[0].length>11?` and ${q.answers[0].length-11} more`:"")),
+        h("ol",{class:"rclues"},q.clues.map((c,j)=>{const stop=q.answers[j].filter(x=>!(q.answers[j+1]||[]).includes(x)).sort((x,y)=>C[x].name.localeCompare(C[y].name));
+          return h("li",{class:j<=k?"on":j===k+1&&a.c?"miss":""},
+            h("div",{class:"rc-line"},h("span",null,c.clue.replace(/^…and /,"").replace(/^./,m=>m.toUpperCase())),h("em",null,`${q.answers[j].length} fit`)),
+            stop.length?h("p",{class:"rc-who"},h("b",{style:"color:"+COL.t[tierAt(q,j)]},`${fmt(ptsAt(q,j))}${j===n-1?" (top)":""}:`)," ",
+              ...stop.flatMap((x,i)=>[i?", ":"",x===a.c?h("span",{class:"me"},C[x].name):C[x].name])):null);})),
         fact?h("p",{class:"why"},fact):null));});
   const box=h("pre",{class:"sharebox"},shareText());
   const copied=h("span",{class:"status",role:"status"});
