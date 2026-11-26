@@ -455,7 +455,10 @@ body.typing .wrap{padding-bottom:45vh}
 
 /* hint button: label plus a small cost tag */
 #hint{display:inline-flex;align-items:center;gap:8px}
-.hint-cost-tag{font-style:normal;font-stretch:112%;font-weight:900;font-size:12px;color:var(--t5);border:1.5px solid currentColor;border-radius:4px;padding:1px 6px;transform:rotate(-2deg)}
+.hint-cost-tag{font-style:normal;font-stretch:112%;font-weight:900;font-size:12px;color:var(--tone,var(--t5));border:1.5px solid currentColor;border-radius:4px;padding:1px 6px;transform:rotate(-2deg)}
+
+/* after a hint the ladder's points are reprinted at their new value */
+.rung .number.cut{animation:press-ink .29s cubic-bezier(.22,.72,.32,1)}
 </style>
 </head>
 <body>
@@ -1475,8 +1478,14 @@ renderPlay=function(){
   let hintsUsed=S.practice?0:((S.daily.hints||{})[q.id]||0);
   const hintBtn=h("button",{type:"button",class:"btn ghost small",id:"hint",onclick:()=>{if(hintsUsed>=3)return;hintsUsed++;
     if(!S.practice){(S.daily.hints??={})[q.id]=hintsUsed;saveLocal();}sfx.lock();drawHints();if(!TOUCH)input.focus({preventScroll:true});}});
+  const worth=(pts,n)=>Math.round(pts*(1-HCOST[n])/10)*10;
+  // the ladder itself shows what each step is now worth; the button shows what the top would drop to
+  function repriceRungs(){document.querySelectorAll(".card .ladder .rung").forEach((rg,j)=>{const num=rg.querySelector(".number"),v=worth(q.clues[j].points,hintsUsed);
+    num.textContent=fmt(v);num.classList.toggle("cut",!!hintsUsed);rg.style.setProperty("--step-ink",COL.t[tierForPts(q,v)]);});}
   function drawHints(){hintList.replaceChildren(...[1,2,3].slice(0,hintsUsed).map(n=>h("li",null,hintText(q,target,n))));hintList.hidden=!hintsUsed;
-    hintBtn.hidden=hintsUsed>=3;hintBtn.replaceChildren(h("span",null,hintsUsed?"Another hint":"Hint"),h("em",{class:"hint-cost-tag"},`−${Math.round(HCOST[hintsUsed+1]*100)}%`));}
+    hintBtn.hidden=hintsUsed>=3;const next=worth(ptsAt(q,q.clues.length-1),hintsUsed+1);
+    hintBtn.replaceChildren(h("span",null,hintsUsed?"Another hint":"Hint"),h("em",{class:"hint-cost-tag",style:"--tone:"+COL.t[tierForPts(q,next)]},`top → ${fmt(next)}`));
+    hintBtn.setAttribute("aria-label",`${hintsUsed?"Another hint":"Hint"}. The top answer would then be worth ${fmt(next)}`);requestAnimationFrame(repriceRungs);}
   drawHints();
   const drawSugg=()=>{list.replaceChildren(...sugg.map((s,i)=>h("li",null,h("button",{type:"button",role:"option","aria-selected":String(i===hl),onmousedown:e=>e.preventDefault(),onclick:()=>pick(s.id)},h("span",null,C[s.id].name),s.via?h("small",null,s.via):null))));list.hidden=!sugg.length;};
   const lockBtn=h("button",{type:"button",class:"btn lock-btn",disabled:true,onclick:()=>lockIn()},"Lock in");
@@ -1532,7 +1541,7 @@ const COMPASS=(id)=>{const k=C[id].cont[0],pts=LIST.filter(c=>c.cont.includes(k)
   const ns=p[1]>q3(ys,.66)?"north":p[1]<q3(ys,.33)?"south":"",ew=p[0]>q3(xs,.66)?"east":p[0]<q3(xs,.33)?"west":"";
   return ns&&ew?`${ns}-${ew}`:ns||ew||"middle";};
 function hintText(q,id,n){const CN={AF:"Africa",AS:"Asia",EU:"Europe",NA:"North America",SA:"South America",OC:"Oceania"},c=C[id],hd=HINTS[id]||{};
-  const many=q.answers.at(-1).length>1?"One of the 1,000-point answers":"The 1,000-point answer";
+  const many=q.answers.at(-1).length>1?"One of the top answers":"The top answer";
   if(n===1){const reg=HINTS[id]&&HINTS[id].r;return reg?`${many} is in ${reg}.`:`${many} is in ${CN[c.cont[0]]}.`;}
   if(n===2){const named=q.clues.filter(cl=>cl.rule.field==="borders"||cl.rule.field==="enclosedBy").map(cl=>cl.rule.value);const nb=(hd.b||[]).filter(x=>!q.answers.at(-1).includes(x)&&!named.includes(x)).sort((a,b)=>C[b].fame-C[a].fame)[0];
     return nb?`It shares a border with ${C[nb].name}.`:hd.cap?`Its capital is ${hd.cap.replace(/s*(.*)$/,"")}.`:`It is in ${CN[c.cont[0]]}.`;}
