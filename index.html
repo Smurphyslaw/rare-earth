@@ -981,7 +981,7 @@ function drawFrame(t){
         ctx.beginPath();GL.feats.forEach(f=>GL.path(f));ctx.fillStyle=COL.land;ctx.globalAlpha=1-GL.dim*.6;ctx.fill();ctx.globalAlpha=1;
         GL.feats.forEach(f=>{const c=GL.colorOf(f.properties.r);if(!c)return;ctx.beginPath();GL.path(f);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=.9;ctx.lineJoin="round";ctx.stroke();});
         ctx.beginPath();GL.path(GL.borders);ctx.strokeStyle=COL.edge;ctx.lineWidth=.8;ctx.stroke();
-        if(GL.hl&&GL.byId.has(GL.hl)){ctx.beginPath();GL.byId.get(GL.hl).forEach(f=>GL.path(f));ctx.strokeStyle=COL.edge;ctx.lineWidth=3;ctx.lineJoin="round";ctx.stroke();}
+        if(GL.hl&&GL.byId.has(GL.hl)){ctx.beginPath();GL.byId.get(GL.hl).forEach(f=>GL.path(f));ctx.strokeStyle=COL.edge;ctx.lineWidth=1.4;ctx.lineJoin="round";ctx.stroke();}
         for(const id in DOTS){const ll=DOTS[id];if(!visible(ll))continue;const [x,y]=GL.proj(ll),c=GL.colorOf(id);ctx.beginPath();ctx.arc(x,y,c?4.4:1.9,0,TAU);ctx.fillStyle=c||rgba(COL.land,.8*(1-GL.dim*.6));ctx.fill();if(c){ctx.strokeStyle=COL.edge;ctx.lineWidth=1.6;ctx.stroke()}}
         if(GL.fieldOverlay){ctx.save();try{GL.fieldOverlay(ctx,w)}finally{ctx.restore()}}
       }
