@@ -491,6 +491,9 @@ html,body{overflow-x:clip}
 .rclues{gap:8px}
 
 /* results: why your answer stopped, right above the clue it missed */
+.badge.tap{cursor:pointer}.badge.tap:hover{border-color:var(--paper)}
+.rung.picked .badge{outline:2px solid var(--paper);outline-offset:2px}
+.step-who{margin:2px 0 0;font-size:13.5px;line-height:1.5;color:var(--paper)}.step-who.muted{color:var(--muted)}.step-who .me{font-weight:800}
 .rc-why{margin:2px 0 3px 1.3em;font-size:13px;line-height:1.45;color:var(--paper);font-weight:600}
 </style>
 </head>
@@ -1016,6 +1019,23 @@ function drawFrame(t){
         ctx.beginPath();GL.path(GL.borders);ctx.strokeStyle=COL.edge;ctx.lineWidth=.8;ctx.stroke();
         if(GL.hl&&GL.byId.has(GL.hl)){ctx.beginPath();GL.byId.get(GL.hl).forEach(f=>GL.path(f));ctx.strokeStyle=COL.edge;ctx.lineWidth=1.4;ctx.lineJoin="round";ctx.stroke();}
         for(const id in DOTS){const ll=DOTS[id];if(!visible(ll))continue;const [x,y]=GL.proj(ll),c=GL.colorOf(id);ctx.beginPath();ctx.arc(x,y,c?4.4:1.9,0,TAU);ctx.fillStyle=c||rgba(COL.land,.8*(1-GL.dim*.6));ctx.fill();if(c){ctx.strokeStyle=COL.edge;ctx.lineWidth=1.6;ctx.stroke()}}
+        // name the small lit-up countries (tiny islands and microstates) so nobody has to guess what a speck is
+        // a label sits right of its dot, or left if the right would run off the globe; skipped if neither fits
+        const inDisc=(x,y)=>Math.hypot(x-cx,y-cy)<LR-5,fitX=(p,tw,g)=>inDisc(p[0]+g+tw,p[1])&&inDisc(p[0]+g,p[1])?p[0]+g:inDisc(p[0]-g-tw,p[1])&&inDisc(p[0]-g,p[1])?p[0]-g-tw:null;
+        if(GL.labelIds&&GL.labelIds.length){const placed=[];ctx.font="800 11px Archivo, Arial, sans-serif";ctx.textBaseline="middle";ctx.textAlign="left";ctx.lineJoin="round";
+          for(const id of GL.labelIds){let px=null;
+            if(DOTS[id]){if(!visible(DOTS[id]))continue;px=GL.proj(DOTS[id]);}
+            else{const fs=GL.byId.get(id);if(!fs)continue;const b=GL.path.bounds({type:"FeatureCollection",features:fs});if(!isFinite(b[0][0])||Math.max(b[1][0]-b[0][0],b[1][1]-b[0][1])>22)continue;px=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2];}
+            const name=C[id]?.name||id,tw=ctx.measureText(name).width,rx=fitX(px,tw,7),ry=px[1]-7;if(rx==null||placed.some(p=>rx<p[0]+p[2]&&p[0]<rx+tw&&ry<p[1]+14&&p[1]<ry+14))continue;placed.push([rx,ry,tw]);
+            ctx.strokeStyle=COL.edge;ctx.lineWidth=3;ctx.strokeText(name,rx,px[1]);ctx.fillStyle=COL.paper;ctx.fillText(name,rx,px[1]);}
+          // then, quieter, the other small countries in view, so unlit specks have names too
+          ctx.font="600 10.5px Archivo, Arial, sans-serif";let extra=0;const lit=new Set(GL.labelIds);
+          for(const id of new Set([...Object.keys(DOTS),...GL.byId.keys()])){if(lit.has(id)||!C[id]||extra>=12)continue;let px=null;
+            if(DOTS[id]){if(!visible(DOTS[id]))continue;px=GL.proj(DOTS[id]);}
+            else{const b=GL.path.bounds({type:"FeatureCollection",features:GL.byId.get(id)});if(!isFinite(b[0][0])||Math.max(b[1][0]-b[0][0],b[1][1]-b[0][1])>14)continue;px=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2];}
+            if(px[0]<6||px[1]<6||px[0]>w-6||px[1]>w-6)continue;
+            const name=C[id].name,tw=ctx.measureText(name).width,rx=fitX(px,tw,6),ry=px[1]-7;if(rx==null||placed.some(p=>rx<p[0]+p[2]&&p[0]<rx+tw&&ry<p[1]+14&&p[1]<ry+14))continue;placed.push([rx,ry,tw]);extra++;
+            ctx.strokeStyle=COL.edge;ctx.lineWidth=3;ctx.strokeText(name,rx,px[1]);ctx.fillStyle=rgba(COL.paper,.62);ctx.fillText(name,rx,px[1]);}}
         if(GL.fieldOverlay){ctx.save();try{GL.fieldOverlay(ctx,w)}finally{ctx.restore()}}
       }
     }
@@ -1124,7 +1144,7 @@ const scoreOf=(set,A=answers())=>set.reduce((s,pid)=>s+(A[pid]?.pts||0),0);
 const app=$("app");
 let tourTimer=0,cdTimer=0;
 function setScreen(name,...nodes){document.body.classList.remove("typing");S.screen=name;S.epoch++;GL.zoomTo=1;GL.autoSpin=false;stopTimer();clearInterval(tourTimer);clearInterval(cdTimer);S.boardEl=null;$("tip").hidden=true;
-  GL.pins=[];GL.hl=null;GL.info=null;app.replaceChildren(...nodes);renderHud();window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
+  GL.pins=[];GL.hl=null;GL.info=null;GL.labelIds=null;app.replaceChildren(...nodes);renderHud();window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
 function renderHud(){
   $("hud-day").textContent=S.archive?`No. ${S.archive}`:S.practice?"Practice round":`No. ${PNUM}`;
   const st=streak(),sEl=$("hud-streak");sEl.querySelector("b").textContent=String(st);sEl.classList.toggle("hot",st>0);sEl.title=`Daily streak: ${st}`;
@@ -1638,7 +1658,7 @@ renderReveal=function(animate=true){
   const verdictText=k>=0?(k===n-1?(a.t===5?"Top of the ladder!":"You made the top"):`${k+1} of ${n} steps`):id?"Off the ladder":a.to?"Time ran out":"Passed";
   const verdict=h("h3",{class:"climb-verdict"},animate?"Climbing…":verdictText);
   const tally=h("strong",{class:"number inked tally",style:"--tone:"+(k>=0?(a.t>=0?COL.t[a.t]:COL.miss):COL.miss)},animate?"+0":"+"+fmt(a.pts??ptsAt(q,k)));
-  const explain=h("p",{class:"explain"});
+  const explain=h("p",{class:"explain"}),stepWho=h("p",{class:"step-who muted",hidden:true},"Tap a step number to see every country that fits it.");
   const hintNote=a.h&&a.pts>0?h("p",{class:"explain hint-cost"},k===q.clues.length-1&&a.t!==5?`With hints, this one is worth ${fmt(a.pts)}. Gold and a postcard allow one hint at most.`:k===q.clues.length-1?`With 1 hint, this one is worth ${fmt(a.pts)}. Still gold.`:`With hints, this one is worth ${fmt(a.pts)}.`):null;
   if(id&&k<n-1){const nxt=q.answers[k+1].map(x=>C[x].name);explain.textContent=missLine(q,k,id)+(k<0?"":` ${nxt.length<=4?"Step "+(k+2)+": "+nxt.join(", "):nxt.length+" countries reach step "+(k+2)}.`);}
   else if(!id)explain.textContent=a.to?"No answer in time.":"No answer this time.";
@@ -1650,23 +1670,30 @@ renderReveal=function(animate=true){
   const later=h("div",{class:"later"+(animate?" wait":""),style:"display:flex;flex-direction:column;gap:16px"},
     (()=>{const f=(typeof factFor==="function"&&factFor(cardKey(q)))||q.fieldNote;return f?h("p",{class:"why"},h("b",null,"Did you know? "),f):null;})(),
     h("p",{class:"share-of"},h("b",null,tops.length>1?"1,000-point answers: ":"1,000-point answer: "),tops.join(", ")),
-    actions,
-    h("details",null,h("summary",null,"Countries that fit each step"),h("div",{class:"steps-all"},q.clues.map((c,j)=>h("div",null,h("h3",null,`Step ${j+1} · ${fmt(c.points)}`),
-      h("div",{class:"chips"},q.answers[j].map(x=>h("span",{class:"chip"+(x===id?" me":""),style:tv(tierAt(q,j))},h("i",{class:"dot"}),C[x].name))))))));
+    actions);
   const verdictRow=h("div",{class:"climb-row"},verdict,tally);
   setScreen("reveal",h("div",{class:"card enter"},
     h("div",{class:"row-between"},h("span",{class:"eyebrow"},`${modeTag()}Question ${S.i+1} of ${S.set.length}`),pips(S.set,-1)),
     h("div",{class:"said"},id?h("span",null,"You said ",h("b",null,C[id].name)):a.to?"Time ran out":"You passed"),
-    lad,verdictRow,explain,hintNote,stampEl,later));
+    lad,stepWho,verdictRow,explain,hintNote,stampEl,later));
   layoutRail(lad,animate?[]:q.clues.slice(1).map((c,j)=>j<k?"1 1.1":j===k&&id?".54 1.1":".001 1.1"));
   setStage("md",false);GL.dim=0;
   const top=q.answers.at(-1);
-  const finalView=()=>{GL.colorOf=x=>top.includes(x)?COL.t[5]:x===id&&k<0?COL.miss:x===id?(a.t>=0?COL.t[a.t]:COL.miss):null;
+  const finalView=()=>{GL.colorOf=x=>top.includes(x)?COL.t[5]:x===id&&k<0?COL.miss:x===id?(a.t>=0?COL.t[a.t]:COL.miss):null;GL.labelIds=[...new Set([...top,...(id?[id]:[])])];
     GL.ladder={lake:lake&&lake.geo,lines:linesOf(q,n-1),label:lake?{ll:(b=>[(b[0][0]+b[1][0])/2,b[1][1]+1.3])(d3.geoBounds(lake.geo)),text:q.reveal.feature||""}:null};
     camera(lake?d3.geoCentroid(lake.geo):centerOf(top),900,zoomForSet(top));};
   GL.info=x=>{let j=-1;for(let s=0;s<q.answers.length;s++){if(q.answers[s].includes(x))j=s;else break;}return j>=0?{text:`Reaches step ${j+1} · ${fmt(ptsAt(q,j))}`,style:tv(tierAt(q,j))}:{text:"Doesn't fit clue 1"};};
   GL.hl=id||top[0];GL.hlColor=k>=0?(a.t>=0?COL.t[a.t]:COL.miss):id?COL.miss:COL.ink;
+  let picked=-1;
+  const pickStep=j=>{rungs.forEach((r,i)=>r.classList.toggle("picked",i===j&&picked!==j));
+    if(picked===j){picked=-1;stepWho.classList.add("muted");stepWho.textContent="Tap a step number to see every country that fits it.";finalView();return;}
+    picked=j;const set=q.answers[j],col=COL.t[tierAt(q,j)];
+    GL.colorOf=x=>set.includes(x)?(top.includes(x)?COL.t[5]:col):null;GL.labelIds=set.slice();camera(centerOf(set),700,zoomForSet(set));
+    stepWho.classList.remove("muted");stepWho.replaceChildren(h("b",{style:"color:"+col},`Step ${j+1}:`),` ${set.length} ${set.length===1?"country fits":"countries fit"}. `,
+      ...set.slice().sort((x,y)=>C[x].name.localeCompare(C[y].name)).flatMap((x,i)=>[i?", ":"",x===id?h("span",{class:"me"},C[x].name):C[x].name]),". Tap it again to go back.");};
   const finish=async()=>{const alive=()=>S.epoch===ep&&S.screen==="reveal";
+    rungs.forEach((r,j)=>{const b=r.querySelector(".badge");b.classList.add("tap");b.setAttribute("role","button");b.tabIndex=0;b.setAttribute("aria-label",`Show every country that fits step ${j+1}`);
+      b.onclick=()=>pickStep(j);b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pickStep(j);}};});stepWho.hidden=false;
     finalView();verdict.textContent=verdictText;explain.hidden=false;tally.style.setProperty("--tone",k>=0?(a.t>=0?COL.t[a.t]:COL.miss):COL.miss);renderHud();
     if(k===n-1)registerInk(verdictRow,tally,COL.t[5],animate);
     if(timedOut)sfx.miss();
