@@ -491,7 +491,7 @@ html,body{overflow-x:clip}
 .rclues{gap:8px}
 
 /* results: why your answer stopped, right above the clue it missed */
-.badge.tap{cursor:pointer}.badge.tap:hover{border-color:var(--paper)}
+.rung.tap{cursor:pointer;border-radius:6px}.rung.tap:hover .badge,.rung.tap:focus-visible .badge{border-color:var(--paper)}.rung.tap:hover .clue{color:var(--paper)}.rung.tap:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 .rung.picked .badge{outline:2px solid var(--paper);outline-offset:2px}
 .step-who{margin:2px 0 0;font-size:13.5px;line-height:1.5;color:var(--paper)}.step-who.muted{color:var(--muted)}.step-who .me{font-weight:800}
 .rc-why{margin:2px 0 3px 1.3em;font-size:13px;line-height:1.45;color:var(--paper);font-weight:600}
@@ -975,6 +975,11 @@ if(window.d3){GL.proj=d3.geoOrthographic().clipAngle(90).precision(.6);GL.path=d
   if(!window.d3||!window.topojson)return;
   try{const r=await fetch("world.json");if(!r.ok)return;const topo=await r.json();
     GL.feats=topojson.feature(topo,topo.objects.countries).features;
+    // map shapes that aren't countries in the game: named by where they are, so a tap can explain them
+    const TERR=[[[-12.2,24.3],"Western Sahara","Disputed territory, not a country in this game"],[[-59.4,-51.7],"Falkland Islands","British overseas territory, not a country"],
+      [[-42,73.2],"Greenland","Part of the Kingdom of Denmark, not a country here"],[[69.5,-49.3],"French Southern Lands","French territory, not a country"],
+      [[-66.5,18.2],"Puerto Rico","US territory, not a country"],[[165.5,-21.3],"New Caledonia","French territory, not a country"],[[82.5,-85],"Antarctica","No country owns it"]];
+    GL.feats.forEach(f=>{if(f.properties.r)return;const c=d3.geoCentroid(f),t=TERR.find(t=>Math.abs(t[0][0]-c[0])<3&&Math.abs(t[0][1]-c[1])<3);if(t)f.properties.t={name:t[1],note:t[2]};});
     GL.borders=topojson.mesh(topo,topo.objects.countries,(a,b)=>a!==b);
     GL.feats.forEach(f=>{const id=f.properties.r;if(!id)return;if(!GL.byId.has(id))GL.byId.set(id,[]);GL.byId.get(id).push(f)});
     LIST.forEach(c=>{GL.cent[c.id]=CENT_FIX[c.id]||DOTS[c.id]||(GL.byId.has(c.id)?d3.geoCentroid(GL.byId.get(c.id)[0]):null)});
@@ -1026,16 +1031,12 @@ function drawFrame(t){
           for(const id of GL.labelIds){let px=null;
             if(DOTS[id]){if(!visible(DOTS[id]))continue;px=GL.proj(DOTS[id]);}
             else{const fs=GL.byId.get(id);if(!fs)continue;const b=GL.path.bounds({type:"FeatureCollection",features:fs});if(!isFinite(b[0][0])||Math.max(b[1][0]-b[0][0],b[1][1]-b[0][1])>22)continue;px=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2];}
-            const name=C[id]?.name||id,tw=ctx.measureText(name).width,rx=fitX(px,tw,7),ry=px[1]-7;if(rx==null||placed.some(p=>rx<p[0]+p[2]&&p[0]<rx+tw&&ry<p[1]+14&&p[1]<ry+14))continue;placed.push([rx,ry,tw]);
-            ctx.strokeStyle=COL.edge;ctx.lineWidth=3;ctx.strokeText(name,rx,px[1]);ctx.fillStyle=COL.paper;ctx.fillText(name,rx,px[1]);}
-          // then, quieter, the other small countries in view, so unlit specks have names too
-          ctx.font="600 10.5px Archivo, Arial, sans-serif";let extra=0;const lit=new Set(GL.labelIds);
-          for(const id of new Set([...Object.keys(DOTS),...GL.byId.keys()])){if(lit.has(id)||!C[id]||extra>=12)continue;let px=null;
-            if(DOTS[id]){if(!visible(DOTS[id]))continue;px=GL.proj(DOTS[id]);}
-            else{const b=GL.path.bounds({type:"FeatureCollection",features:GL.byId.get(id)});if(!isFinite(b[0][0])||Math.max(b[1][0]-b[0][0],b[1][1]-b[0][1])>14)continue;px=[(b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2];}
-            if(px[0]<6||px[1]<6||px[0]>w-6||px[1]>w-6)continue;
-            const name=C[id].name,tw=ctx.measureText(name).width,rx=fitX(px,tw,6),ry=px[1]-7;if(rx==null||placed.some(p=>rx<p[0]+p[2]&&p[0]<rx+tw&&ry<p[1]+14&&p[1]<ry+14))continue;placed.push([rx,ry,tw]);extra++;
-            ctx.strokeStyle=COL.edge;ctx.lineWidth=3;ctx.strokeText(name,rx,px[1]);ctx.fillStyle=rgba(COL.paper,.62);ctx.fillText(name,rx,px[1]);}}
+            const name=C[id]?.name||id,tw=ctx.measureText(name).width;
+            // right of the dot, then left, then above, then below: the first spot that's on the globe and clear of other labels
+            const spots=[[px[0]+7,px[1]],[px[0]-7-tw,px[1]],[px[0]-tw/2,px[1]-13],[px[0]-tw/2,px[1]+13]];
+            const spot=spots.find(([x,y])=>inDisc(x,y)&&inDisc(x+tw,y)&&!placed.some(p=>x<p[0]+p[2]&&p[0]<x+tw&&y-7<p[1]+14&&p[1]<y+7));if(!spot)continue;placed.push([spot[0],spot[1]-7,tw]);
+            ctx.strokeStyle=COL.edge;ctx.lineWidth=3;ctx.strokeText(name,spot[0],spot[1]);ctx.fillStyle=COL.paper;ctx.fillText(name,spot[0],spot[1]);}
+        }
         if(GL.fieldOverlay){ctx.save();try{GL.fieldOverlay(ctx,w)}finally{ctx.restore()}}
       }
     }
@@ -1057,8 +1058,9 @@ requestAnimationFrame(frame);
 function pick(e){if(!GL.ready)return null;const r=GL.cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,w=r.width,R=(w/2-14)*GL.zoom;
   if(Math.hypot(x-(w/2-3),y-(w/2-3))>Math.min(R,w/2-14))return null;
   for(const id in DOTS){const ll=DOTS[id];if(!visible(ll))continue;const [px,py]=GL.proj(ll);if(Math.hypot(px-x,py-y)<9)return{id,x,y}}
-  const ll=GL.proj.invert([x,y]);if(!ll)return null;const f=GL.feats.find(f=>f.properties.r&&d3.geoContains(f,ll));return f?{id:f.properties.r,x,y}:null;}
-function showTip(hit){const tip=$("tip");if(!hit||!GL.info){tip.hidden=true;return}const info=GL.info(hit.id);
+  const ll=GL.proj.invert([x,y]);if(!ll)return null;const f=GL.feats.find(f=>(f.properties.r||f.properties.t)&&d3.geoContains(f,ll));return f?(f.properties.r?{id:f.properties.r,x,y}:{terr:f.properties.t,x,y}):null;}
+function showTip(hit){const tip=$("tip");if(hit&&hit.terr){tip.replaceChildren(h("b",null,hit.terr.name),h("span",null,hit.terr.note));tip.style.left=hit.x+"px";tip.style.top=hit.y+"px";tip.hidden=false;clearTimeout(showTip.t);showTip.t=setTimeout(()=>{tip.hidden=true},2600);return;}
+  if(!hit||!GL.info){tip.hidden=true;return}const info=GL.info(hit.id);
   tip.replaceChildren(...[h("b",null,C[hit.id].name),info?h("span",null,info.style?h("i",{class:"dot",style:info.style}):null,info.text):null].filter(Boolean));tip.style.left=hit.x+"px";tip.style.top=hit.y+"px";tip.hidden=false;
   clearTimeout(showTip.t);showTip.t=setTimeout(()=>{tip.hidden=true},2600);}
 const touch=()=>{GL.lastTouch=performance.now()};
@@ -1658,7 +1660,7 @@ renderReveal=function(animate=true){
   const verdictText=k>=0?(k===n-1?(a.t===5?"Top of the ladder!":"You made the top"):`${k+1} of ${n} steps`):id?"Off the ladder":a.to?"Time ran out":"Passed";
   const verdict=h("h3",{class:"climb-verdict"},animate?"Climbing…":verdictText);
   const tally=h("strong",{class:"number inked tally",style:"--tone:"+(k>=0?(a.t>=0?COL.t[a.t]:COL.miss):COL.miss)},animate?"+0":"+"+fmt(a.pts??ptsAt(q,k)));
-  const explain=h("p",{class:"explain"}),stepWho=h("p",{class:"step-who muted",hidden:true},"Tap a step number to see every country that fits it.");
+  const explain=h("p",{class:"explain"}),stepWho=h("p",{class:"step-who muted",hidden:true},"Tap a step to see every country that fits it.");
   const hintNote=a.h&&a.pts>0?h("p",{class:"explain hint-cost"},k===q.clues.length-1&&a.t!==5?`With hints, this one is worth ${fmt(a.pts)}. Gold and a postcard allow one hint at most.`:k===q.clues.length-1?`With 1 hint, this one is worth ${fmt(a.pts)}. Still gold.`:`With hints, this one is worth ${fmt(a.pts)}.`):null;
   if(id&&k<n-1){const nxt=q.answers[k+1].map(x=>C[x].name);explain.textContent=missLine(q,k,id)+(k<0?"":` ${nxt.length<=4?"Step "+(k+2)+": "+nxt.join(", "):nxt.length+" countries reach step "+(k+2)}.`);}
   else if(!id)explain.textContent=a.to?"No answer in time.":"No answer this time.";
@@ -1686,14 +1688,14 @@ renderReveal=function(animate=true){
   GL.hl=id||top[0];GL.hlColor=k>=0?(a.t>=0?COL.t[a.t]:COL.miss):id?COL.miss:COL.ink;
   let picked=-1;
   const pickStep=j=>{rungs.forEach((r,i)=>r.classList.toggle("picked",i===j&&picked!==j));
-    if(picked===j){picked=-1;stepWho.classList.add("muted");stepWho.textContent="Tap a step number to see every country that fits it.";finalView();return;}
+    if(picked===j){picked=-1;stepWho.classList.add("muted");stepWho.textContent="Tap a step to see every country that fits it.";finalView();return;}
     picked=j;const set=q.answers[j],col=COL.t[tierAt(q,j)];
     GL.colorOf=x=>set.includes(x)?(top.includes(x)?COL.t[5]:col):null;GL.labelIds=set.slice();camera(centerOf(set),700,zoomForSet(set));
     stepWho.classList.remove("muted");stepWho.replaceChildren(h("b",{style:"color:"+col},`Step ${j+1}:`),` ${set.length} ${set.length===1?"country fits":"countries fit"}. `,
       ...set.slice().sort((x,y)=>C[x].name.localeCompare(C[y].name)).flatMap((x,i)=>[i?", ":"",x===id?h("span",{class:"me"},C[x].name):C[x].name]),". Tap it again to go back.");};
   const finish=async()=>{const alive=()=>S.epoch===ep&&S.screen==="reveal";
-    rungs.forEach((r,j)=>{const b=r.querySelector(".badge");b.classList.add("tap");b.setAttribute("role","button");b.tabIndex=0;b.setAttribute("aria-label",`Show every country that fits step ${j+1}`);
-      b.onclick=()=>pickStep(j);b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pickStep(j);}};});stepWho.hidden=false;
+    rungs.forEach((r,j)=>{r.classList.add("tap");r.setAttribute("role","button");r.tabIndex=0;r.setAttribute("aria-label",`Step ${j+1}: show every country that fits it`);
+      r.onclick=()=>pickStep(j);r.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pickStep(j);}};});stepWho.hidden=false;
     finalView();verdict.textContent=verdictText;explain.hidden=false;tally.style.setProperty("--tone",k>=0?(a.t>=0?COL.t[a.t]:COL.miss):COL.miss);renderHud();
     if(k===n-1)registerInk(verdictRow,tally,COL.t[5],animate);
     if(timedOut)sfx.miss();
