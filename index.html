@@ -410,6 +410,17 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .hint-list{margin:0;padding:12px 14px 12px 34px;border:1.5px dashed var(--line-strong);border-radius:8px;display:flex;flex-direction:column;gap:6px;font-size:15px;color:var(--paper)}
 .hint-list li::marker{color:var(--t5);font-weight:900}
 .hint-list[hidden]{display:none}
+.ab{display:flex;flex-direction:column;gap:8px;margin-top:10px;border-top:1px dashed var(--line-strong);padding-top:10px}
+.ab-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ab-search{flex:1;min-width:150px;max-width:240px;background:var(--bg);border:1.5px solid var(--line-strong);border-radius:8px;color:var(--paper);font:inherit;font-size:14px;padding:7px 10px}
+.ab-res{margin:0;font-size:14px;line-height:1.4;color:var(--paper)}.ab-res:empty{display:none}
+.ab-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.ab-tab{display:flex;align-items:baseline;gap:6px;min-height:34px;border:1.5px solid var(--line-strong);background:none;border-radius:999px;padding:5px 11px;color:var(--muted);font:inherit;cursor:pointer}
+.ab-tab b{color:var(--tc);font-weight:900}.ab-tab small{font-size:12px;font-weight:700}
+.ab-tab.on{border-color:var(--tc);color:var(--paper);background:color-mix(in srgb,var(--tc) 12%,transparent)}
+.ab-cap{margin:0;font-size:13px;color:var(--muted)}
+.ab-list ul{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px 10px;max-height:168px;overflow:auto;font-size:14.5px}
+.ab-list li.me{color:var(--paper);font-weight:800}
 .hint-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .hint-chip{min-height:36px;border:1.5px solid var(--line-strong);background:var(--bg);color:var(--paper);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;font-weight:750;cursor:pointer}
 .hint-chip:hover,.hint-chip:focus-visible{border-color:var(--paper)}
@@ -1778,6 +1789,22 @@ renderReveal=function(animate=true){
 };
 
 /* ---------- results ---------- */
+// every answer, Krillion-style (owner, 28 Nov): one tab per score, a list that scrolls, and a search for any country
+function answerBrowser(q,me){
+  const n=q.clues.length,byName=(x,y)=>C[x].name.localeCompare(C[y].name);
+  const tiers=[];for(let j=n-1;j>=0;j--)tiers.push({j,pts:ptsAt(q,j),ids:q.answers[j].filter(x=>!(q.answers[j+1]||[]).includes(x)).sort(byName)});
+  const mine=reached(q,me);let cur=Math.max(0,tiers.findIndex(t=>t.j===(mine>=0?mine:n-1)));
+  const tabs=h("div",{class:"ab-tabs",role:"tablist"}),list=h("div",{class:"ab-list"}),res=h("p",{class:"ab-res",role:"status"});
+  const search=h("input",{type:"search",class:"ab-search",placeholder:"Check any country","aria-label":"Check how far any country climbs",autocomplete:"off",spellcheck:"false"});
+  const draw=()=>{tabs.replaceChildren(...tiers.map((t,i)=>h("button",{type:"button",role:"tab","aria-selected":String(i===cur),class:"ab-tab"+(i===cur?" on":""),style:"--tc:"+COL.t[tierAt(q,t.j)],onclick:()=>{cur=i;draw();}},h("b",null,fmt(t.pts)),h("small",null,String(t.ids.length)))));
+    const t=tiers[cur];list.replaceChildren(h("p",{class:"ab-cap"},t.j===n-1?`The top: fits all ${n} clues.`:`Stops at step ${t.j+1}: fits ${t.j?"clues 1–"+(t.j+1):"clue 1"}, not clue ${t.j+2}.`),
+      h("ul",null,...t.ids.map(x=>h("li",{class:x===me?"me":""},C[x].name))));};
+  search.addEventListener("input",()=>{const v=search.value.trim();const id=LOOKUP.get(norm(v))||(norm(v).length>=3?(suggest(v)[0]||{}).id:null);
+    if(!v){res.textContent="";return;}if(!id){res.textContent="No country by that name.";return;}
+    const k=reached(q,id);res.textContent=k===n-1?`${C[id].name} fits all ${n} clues: ${fmt(ptsAt(q,k))}.`:`${missLine(q,k,id)} ${k<0?"It scores 0.":"It scores "+fmt(ptsAt(q,k))+"."}`;
+    if(k>=0){cur=tiers.findIndex(t=>t.j===k);draw();}});
+  draw();
+  return h("div",{class:"ab"},h("div",{class:"ab-head"},h("b",null,"Every answer"),search),res,tabs,list);}
 shareText=function(){const total=scoreOf(S.set),A=answers();const sq=S.set.map(pid=>{const a=A[pid];return a&&a.t>=0?TIERS[a.t].emoji:"⬛"}).join("");const st=streak();
   const steps=S.set.map(pid=>{const a=A[pid],q=LP[pid];return `${(a?a.k:-1)+1}/${q.clues.length}`}).join(" · ");
   return `Rare Earth #${S.archive||PNUM} · ${fmt(total)}/${fmt(S.set.length*1000)}\n${sq}\n${steps}${!S.practice&&!S.archive&&st>1?`\nStreak ${st}`:""}\nsmurphyslaw.github.io/rare-earth`;};
@@ -1796,8 +1823,7 @@ renderDone=function(celebrate=false){
           return h("li",{class:j<=k?"on":j===k+1&&a.c?"miss":""},
             h("div",{class:"rc-line"},h("span",null,c.clue.replace(/^…and /,"").replace(/^./,m=>m.toUpperCase())),h("em",null,`${q.answers[j].length} fit`)),
             j===k+1&&a.c?h("p",{class:"rc-why"},missLine(q,k,a.c)):null,
-            stop.length?h("p",{class:"rc-who"},h("b",{style:"color:"+COL.t[tierAt(q,j)]},`${fmt(ptsAt(q,j))}${j===n-1?" (top)":""}:`)," ",
-              ...stop.flatMap((x,i)=>[i?", ":"",x===a.c?h("span",{class:"me"},C[x].name):C[x].name])):null);})),
+            null);})),answerBrowser(q,a.c),
         fact?h("p",{class:"why"},fact):null));});
   const box=h("pre",{class:"sharebox"},shareText());
   const copied=h("span",{class:"status",role:"status"});
