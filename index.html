@@ -410,6 +410,9 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 .hint-list{margin:0;padding:12px 14px 12px 34px;border:1.5px dashed var(--line-strong);border-radius:8px;display:flex;flex-direction:column;gap:6px;font-size:15px;color:var(--paper)}
 .hint-list li::marker{color:var(--t5);font-weight:900}
 .hint-list[hidden]{display:none}
+.hint-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.hint-chip{min-height:36px;border:1.5px solid var(--line-strong);background:var(--bg);color:var(--paper);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;font-weight:750;cursor:pointer}
+.hint-chip:hover,.hint-chip:focus-visible{border-color:var(--paper)}
 .hint-cost{color:var(--t5)!important}
 .rhint{font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--t5);border:1.5px solid currentColor;border-radius:3px;padding:0 5px}
 
@@ -1079,7 +1082,7 @@ GL.cv.addEventListener("pointermove",e=>{if(PTR.has(e.pointerId))PTR.set(e.point
     if(d.moved){const s=180/(Math.PI*(GL.cv.clientWidth/2-14)*GL.zoom);GL.rot=[d.rot[0]+dx*s,Math.max(-80,Math.min(80,d.rot[1]-dy*s)),0];GL.spin=false;$("tip").hidden=true;}}
   else if(e.pointerType==="mouse"){const hit=pick(e);GL.hover=GL.info&&hit&&hit.id||null;showTip(hit);}});
 GL.cv.addEventListener("pointerup",e=>{PTR.delete(e.pointerId);if(pinch){if(PTR.size<2)pinch=null;GL.drag=null;return;}
-  const d=GL.drag;GL.drag=null;if(d&&!d.moved)showTip(pick(e));
+  const d=GL.drag;GL.drag=null;if(d&&!d.moved){const hit=pick(e);if(GL.onPick&&hit&&hit.id&&GL.onPick(hit.id))return;showTip(hit);}
   else if(d&&!reduceMotion&&performance.now()-d.lt<80){const v=Math.hypot(d.vx,d.vy);if(v>.02){const c=Math.min(1,.6/v);GL.fling={vx:d.vx*c,vy:d.vy*c};}}});
 GL.cv.addEventListener("pointercancel",e=>{PTR.delete(e.pointerId);if(PTR.size<2)pinch=null;GL.drag=null});
 GL.cv.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse"){$("tip").hidden=true;GL.hover=null;}});
@@ -1149,7 +1152,7 @@ const scoreOf=(set,A=answers())=>set.reduce((s,pid)=>s+(A[pid]?.pts||0),0);
 const app=$("app");
 let tourTimer=0,cdTimer=0;
 function setScreen(name,...nodes){document.body.classList.remove("typing");S.screen=name;S.epoch++;GL.zoomTo=1;GL.autoSpin=false;stopTimer();clearInterval(tourTimer);clearInterval(cdTimer);S.boardEl=null;$("tip").hidden=true;
-  GL.pins=[];GL.hl=null;GL.hover=null;GL.info=null;delete $("stage").dataset.pp;GL.labelIds=null;app.replaceChildren(...nodes);renderHud();window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
+  GL.pins=[];GL.hl=null;GL.hover=null;GL.info=null;GL.onPick=null;delete $("stage").dataset.pp;GL.labelIds=null;app.replaceChildren(...nodes);renderHud();window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
 function renderHud(){
   $("hud-day").textContent=S.archive?`No. ${S.archive}`:S.practice?"Practice round":`No. ${PNUM}`;
   const st=streak(),sEl=$("hud-streak");sEl.querySelector("b").textContent=String(st);sEl.classList.toggle("hot",st>0);sEl.title=`Daily streak: ${st}`;
@@ -1538,15 +1541,32 @@ renderPlay=function(){
   const HCOST=[0,.1,.25,.5];
   const target=(()=>{const t=q.answers.at(-1);let hh=0;for(const ch of q.id)hh=(hh*31+ch.charCodeAt(0))>>>0;return t.slice().sort()[hh%t.length];})();
   const hintList=h("ol",{class:"hint-list"}),hintMax=h("p",{class:"hint-max",hidden:true});
+  // globe hints (owner, 28 Nov): hint 1 turns the globe to the answer's part of the world with the usual nudge,
+  // hint 2 lights about six countries (the top answer plus the best-known ones from the step below), hint 3 is the first letter.
+  // No 50-50: the shortlist never drops below six unless the ladder itself is that small.
+  const shortlist=(()=>{const n=q.clues.length,out=[...q.answers.at(-1)];
+    // the step below the top gives the best-known near misses; lower steps only top it up, nearest the answer first
+    const tc=GL.cent[target],far=x=>tc&&GL.cent[x]?d3.geoDistance(tc,GL.cent[x]):9;
+    for(let j=n-2;j>=0&&out.length<6;j--){const pool=q.answers[j].filter(x=>!out.includes(x)).sort(j===n-2?(a,b)=>C[b].fame-C[a].fame:(a,b)=>far(a)-far(b));for(const x of pool){if(out.length>=6)break;out.push(x);}}
+    return out.sort((a,b)=>C[a].name.localeCompare(C[b].name));})();
+  const basePlan=hintPlan(q,target),nudge=basePlan.slice(0,-1).find(p=>!p.text.includes(" is in "))||null; // the globe already shows the region
+  const PLAN=[{text:(nudge?nudge.text+" ":"")+"The globe has turned to its part of the world."},
+    {text:"One of the lit countries is the top answer. Tap one on the globe, or a name here, to pick it.",chips:true},basePlan.at(-1)];
+  function globeHints(fly){
+    if(hintsUsed>=1){GL.spin=false;const c=GL.cent[target];if(fly&&c&&hintsUsed===1)camera(c,1000,Math.min(MAXZ(),1.8));}
+    if(hintsUsed>=2){GL.colorOf=x=>shortlist.includes(x)?COL.paper:null;GL.labelIds=shortlist.slice();
+      GL.info=x=>shortlist.includes(x)?{text:"Tap to pick"}:null;
+      GL.onPick=x=>{if(!shortlist.includes(x))return false;pick(x);return true;};
+      if(fly)camera(centerOf(shortlist),900,zoomForSet(shortlist));}}
   let hintsUsed=S.practice?0:((S.daily.hints||{})[q.id]||0);
-  const hintBtn=h("button",{type:"button",class:"btn ghost small",id:"hint",onclick:()=>{if(hintsUsed>=hintPlan(q,target).length)return;hintsUsed++;
-    if(!S.practice){(S.daily.hints??={})[q.id]=hintsUsed;saveLocal();}sfx.lock();drawHints();if(!TOUCH)input.focus({preventScroll:true});}});
+  const hintBtn=h("button",{type:"button",class:"btn ghost small",id:"hint",onclick:()=>{if(hintsUsed>=PLAN.length)return;hintsUsed++;
+    if(!S.practice){(S.daily.hints??={})[q.id]=hintsUsed;saveLocal();}sfx.lock();drawHints();globeHints(true);if(!TOUCH)input.focus({preventScroll:true});}});
   const worth=(pts,n)=>Math.round(pts*(1-HC[n])/10)*10;
   // the ladder itself shows what each step is now worth; the button shows what the top would drop to
   function repriceRungs(){document.querySelectorAll(".card .ladder .rung").forEach((rg,j)=>{const num=rg.querySelector(".number"),top=j===q.clues.length-1,v=top?worth(q.clues[j].points,hintsUsed):q.clues[j].points;
     num.textContent=fmt(v);num.classList.toggle("cut",top&&!!hintsUsed);rg.style.setProperty("--step-ink",COL.t[tierForPts(q,v)]);});}
-  function drawHints(){hintList.replaceChildren(...hintPlan(q,target).slice(0,hintsUsed).map(p=>h("li",null,p.text)));hintList.hidden=!hintsUsed;
-    const plan=hintPlan(q,target);hintBtn.hidden=hintsUsed>=plan.length;const next=worth(ptsAt(q,q.clues.length-1),Math.min(hintsUsed+1,3));
+  function drawHints(){hintList.replaceChildren(...PLAN.slice(0,hintsUsed).map(p=>h("li",null,p.text,p.chips?h("div",{class:"hint-chips"},...shortlist.map(x=>h("button",{type:"button",class:"hint-chip",onclick:()=>pick(x)},C[x].name))):null)));hintList.hidden=!hintsUsed;
+    const plan=PLAN;hintBtn.hidden=hintsUsed>=plan.length;const next=worth(ptsAt(q,q.clues.length-1),Math.min(hintsUsed+1,3));
     hintBtn.replaceChildren(h("span",null,hintsUsed?"Another hint":"Hint"),h("em",{class:"hint-cost-tag",style:"--tone:"+COL.t[tierForPts(q,next)]},`top becomes ${fmt(next)}`+(next<900&&hintsUsed+1>=2&&!S.practice?", no postcard":"")));
     hintBtn.setAttribute("aria-label",`${hintsUsed?"Another hint":"Hint"}. The top answer would then be worth ${fmt(next)}`);hintMax.textContent=hintsUsed?`With ${hintsUsed===1?"1 hint":hintsUsed+" hints"}, the most you can get here is ${fmt(worth(ptsAt(q,q.clues.length-1),hintsUsed))}.`:"";hintMax.hidden=!hintsUsed;}
   drawHints();
@@ -1575,6 +1595,7 @@ renderPlay=function(){
     hintList,hintMax));
   layoutRail(wrap);
   setStage("play",false);GL.dim=1;GL.spin=true;GL.speed=.014;GL.colorOf=()=>null;
+  if(hintsUsed)globeHints(true);
   if(!TOUCH)input.focus({preventScroll:true});
   input.addEventListener("blur",()=>setTimeout(()=>{if(document.activeElement!==input)document.body.classList.remove("typing")},150));
   input.addEventListener("focus",()=>{if(!TOUCH||innerWidth>520)return;document.body.classList.add("typing");setTimeout(()=>{const p=input.closest(".card")?.querySelector(".prompt");if(p)window.scrollTo({top:Math.max(0,p.getBoundingClientRect().top+window.scrollY-10),behavior:"auto"});},250);});
