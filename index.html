@@ -1534,7 +1534,7 @@ renderPlay=function(){
   const err=h("p",{class:"err",role:"alert"});
   const bar=h("i"),track=h("div",{class:"track"},bar),secs=h("span",{class:"secs"},String(SECS_L));
   let sugg=[],hl=0;
-  // hints: three, each more helpful, each costing a bigger share of this question's points
+  // hints: three, each more helpful; each lowers only the top step's points, so a hint never costs the lower steps anything
   const HCOST=[0,.1,.25,.5];
   const target=(()=>{const t=q.answers.at(-1);let hh=0;for(const ch of q.id)hh=(hh*31+ch.charCodeAt(0))>>>0;return t.slice().sort()[hh%t.length];})();
   const hintList=h("ol",{class:"hint-list"}),hintMax=h("p",{class:"hint-max",hidden:true});
@@ -1543,8 +1543,8 @@ renderPlay=function(){
     if(!S.practice){(S.daily.hints??={})[q.id]=hintsUsed;saveLocal();}sfx.lock();drawHints();if(!TOUCH)input.focus({preventScroll:true});}});
   const worth=(pts,n)=>Math.round(pts*(1-HC[n])/10)*10;
   // the ladder itself shows what each step is now worth; the button shows what the top would drop to
-  function repriceRungs(){document.querySelectorAll(".card .ladder .rung").forEach((rg,j)=>{const num=rg.querySelector(".number"),v=worth(q.clues[j].points,hintsUsed);
-    num.textContent=fmt(v);num.classList.toggle("cut",!!hintsUsed);rg.style.setProperty("--step-ink",COL.t[tierForPts(q,v)]);});}
+  function repriceRungs(){document.querySelectorAll(".card .ladder .rung").forEach((rg,j)=>{const num=rg.querySelector(".number"),top=j===q.clues.length-1,v=top?worth(q.clues[j].points,hintsUsed):q.clues[j].points;
+    num.textContent=fmt(v);num.classList.toggle("cut",top&&!!hintsUsed);rg.style.setProperty("--step-ink",COL.t[tierForPts(q,v)]);});}
   function drawHints(){hintList.replaceChildren(...hintPlan(q,target).slice(0,hintsUsed).map(p=>h("li",null,p.text)));hintList.hidden=!hintsUsed;
     const plan=hintPlan(q,target);hintBtn.hidden=hintsUsed>=plan.length;const next=worth(ptsAt(q,q.clues.length-1),Math.min(hintsUsed+1,3));
     hintBtn.replaceChildren(h("span",null,hintsUsed?"Another hint":"Hint"),h("em",{class:"hint-cost-tag",style:"--tone:"+COL.t[tierForPts(q,next)]},`top becomes ${fmt(next)}`+(next<900&&hintsUsed+1>=2&&!S.practice?", no postcard":"")));
@@ -1591,7 +1591,7 @@ renderPlay=function(){
     const k=reached(q,cid);
     const isNew=!S.practice&&k>=0&&PROF.stamps[cid]==null;
     if(!S.practice)S.daily.open=null;
-    const pen=HCOST[hintsUsed]||0,got=Math.round(ptsAt(q,k)*(1-pen)/10)*10,ti=k<0?-1:tierForPts(q,got);
+    const pen=k===q.clues.length-1?(HCOST[hintsUsed]||0):0,got=Math.round(ptsAt(q,k)*(1-pen)/10)*10,ti=k<0?-1:tierForPts(q,got);
     answers()[q.id]={c:cid||null,k,t:ti,pts:got,full:ptsAt(q,k),h:hintsUsed,n:isNew,to:!!timedOut&&!cid};
     if(!S.practice&&k>=0){PROF.stamps[cid]=Math.max(PROF.stamps[cid]??-1,ti);earnPassport(q,cid,k,answers()[q.id]);}
     if(!S.practice&&TODAY_SET.every(p=>S.daily.answers[p]))PROF.hist[TODAY]=scoreOf(TODAY_SET,S.daily.answers);
@@ -1680,7 +1680,7 @@ renderReveal=function(animate=true){
   const verdict=h("h3",{class:"climb-verdict"},animate?"Climbing…":verdictText);
   const tally=h("strong",{class:"number inked tally",style:"--tone:"+(k>=0?(a.t>=0?COL.t[a.t]:COL.miss):COL.miss)},animate?"+0":"+"+fmt(a.pts??ptsAt(q,k)));
   const explain=h("p",{class:"explain"}),stepWho=h("p",{class:"step-who muted",hidden:true},"Tap a step to see every country that fits it.");
-  const hintNote=a.h&&a.pts>0?h("p",{class:"explain hint-cost"},k===q.clues.length-1&&a.t!==5?`With hints, this one is worth ${fmt(a.pts)}. Gold and a postcard allow one hint at most.`:k===q.clues.length-1?`With 1 hint, this one is worth ${fmt(a.pts)}. Still gold.`:`With hints, this one is worth ${fmt(a.pts)}.`):null;
+  const hintNote=a.h&&a.pts>0&&k===q.clues.length-1?h("p",{class:"explain hint-cost"},k===q.clues.length-1&&a.t!==5?`With hints, this one is worth ${fmt(a.pts)}. Gold and a postcard allow one hint at most.`:k===q.clues.length-1?`With 1 hint, this one is worth ${fmt(a.pts)}. Still gold.`:`With hints, this one is worth ${fmt(a.pts)}.`):null;
   if(id&&k<n-1){const nxt=q.answers[k+1].map(x=>C[x].name);explain.textContent=missLine(q,k,id)+(k<0?"":` ${nxt.length<=4?"Step "+(k+2)+": "+nxt.join(", "):nxt.length+" countries reach step "+(k+2)}.`);}
   else if(!id)explain.textContent=a.to?"No answer in time.":"No answer this time.";
   if(animate)explain.hidden=true;
