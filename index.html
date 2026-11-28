@@ -1649,7 +1649,7 @@ function hintPlan(q,id){const CN={AF:"Africa",AS:"Asia",EU:"Europe",NA:"North Am
   // the map data counts inner seas as part of their ocean (Greece "touches the Atlantic"), so name an ocean only when it's the country's only water
   const oceanOnly=(hd.cs||[]).every(k=>/-ocean$/.test(k));
   for(const sea of (hd.cs||[]).filter(k=>HINT_SEAS.includes(k)&&(oceanOnly||!/-ocean$/.test(k))&&!rules.some(r=>r.value===k)))cands.push({w:1.5,text:`It has a coast on ${seaName(sea)}.`,t:x=>(H(x).cs||[]).includes(sea)});
-  const nn=(hd.b||[]).length;if(!rules.some(r=>r.field==="landlocked"&&nn===0))cands.push({w:2,text:nn===0?"It has no land neighbours.":nn===1?"It has only one land neighbour.":`It has ${nn} land neighbours.`,t:x=>(H(x).b||[]).length===nn});
+  // no neighbour counts as hints (owner, 28 Nov): like count clues, they feel like homework and narrow almost nothing
   for(const nb of (hd.b||[]).filter(x=>!top.includes(x)&&!named.includes(x)&&C[x]).sort((x,y)=>C[y].fame-C[x].fame))cands.push({w:2.5,text:`It shares a border with ${C[nb].name}.`,t:x=>(H(x).b||[]).includes(nb)});
   const fin=rules.at(-1);if(fin.field==="lakes"||fin.field==="rivers"){const key=fin.field==="lakes"?"l":"v",others=Object.keys(HINTS).filter(x=>x!==id&&!top.includes(x)&&(HINTS[x][key]||[]).includes(fin.value));
     if(others.length)cands.push({w:2.5,text:`${q.reveal.feature||"It"} is shared with ${others.slice(0,2).map(x=>C[x].name).join(" and ")}.`,t:()=>true,soft:true});}
