@@ -61,6 +61,7 @@ body.typing .wrap{padding-bottom:75vh}
 .zoom button{width:36px;height:36px;border-radius:8px;border:2px solid var(--line-strong);background:var(--bg);color:var(--paper);font-size:20px;font-weight:800;line-height:1;cursor:pointer;display:grid;place-items:center}
 .zoom button:hover{border-color:var(--paper)}
 .stage[data-size="sm"] .zoom{display:none}
+@media (min-width:900px){.stage[data-size="sm"][data-pp] .zoom{display:flex}}
 button.mark{background:none;border:0;padding:0;color:inherit;cursor:pointer}
 button.mark:disabled{cursor:default}
 .today{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border:2px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel)}
@@ -415,10 +416,11 @@ dialog#help::backdrop{background:rgba(4,9,22,.78)}
 
 
 /* passport booklet: passport-page proportions, cover at the spine, one page at a time */
-.pp-booklet{--pp-paper:#F2ECDF;--pp-ink:#152849;--pp-muted:#54627A;--pp-rule:#C9C0AF;--pp-brass:#865410;width:min(100%,430px);margin:0 auto;padding:6px 0 6px 10px;border-radius:12px;background:#263E46;box-shadow:0 8px 0 var(--shadow)}
+.pp-booklet{--pp-paper:#F2ECDF;--pp-ink:#152849;--pp-muted:#54627A;--pp-rule:#C9C0AF;--pp-brass:#865410;width:min(100%,430px);margin:0 auto;padding:6px 0 6px 10px;border-radius:12px;background:linear-gradient(160deg,#6B2431,#4A1621);box-shadow:inset 0 0 0 1px rgba(201,162,77,.45),inset 0 0 0 4px rgba(0,0,0,.12),0 8px 0 var(--shadow)}
 .pp-page{position:relative;aspect-ratio:.72;display:flex;flex-direction:column;background:var(--pp-paper);color:var(--pp-ink);border-radius:4px 9px 9px 4px;padding:16px 18px 12px 26px;box-shadow:3px 0 0 #E2D7C2,5px 0 0 #CFC2A8;overflow:hidden;touch-action:pan-y}
 .pp-page::before{content:"";position:absolute;inset:0 auto 0 0;width:20px;background:linear-gradient(90deg,rgba(21,40,73,.18),transparent);pointer-events:none}
-.pp-page::after{content:"";position:absolute;top:12px;bottom:12px;left:8px;border-left:1.5px dashed rgba(21,40,73,.25);pointer-events:none}
+.pp-page::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.9;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'><g fill='none' stroke='%23152849' stroke-opacity='.06' stroke-width='1.1'><circle cx='110' cy='110' r='96'/><ellipse cx='110' cy='110' rx='48' ry='96'/><ellipse cx='110' cy='110' rx='86' ry='96'/><ellipse cx='110' cy='110' rx='96' ry='34'/><ellipse cx='110' cy='110' rx='96' ry='70'/></g></svg>"),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='28' viewBox='0 0 96 28'><g fill='none' stroke='%23152849' stroke-opacity='.055' stroke-width='.9'><path d='M0 14C16 2 32 2 48 14S80 26 96 14'/><path d='M0 14C16 26 32 26 48 14S80 2 96 14'/></g></svg>");background-repeat:no-repeat,repeat;background-position:center 58%,0 0;background-size:78% auto,96px 28px}
+.pp-page>*{position:relative;z-index:1}
 .pp-pagehead{display:flex;justify-content:space-between;gap:10px;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--pp-muted);border-bottom:1px solid var(--pp-rule);padding-bottom:8px}
 .pp-pagehead span{white-space:nowrap}.pp-pagehead span:last-child{text-align:right}
 .pp-pagebody{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:12px;min-height:0}
@@ -1023,6 +1025,7 @@ function drawFrame(t){
         GL.feats.forEach(f=>{const c=GL.colorOf(f.properties.r);if(!c)return;ctx.beginPath();GL.path(f);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=.9;ctx.lineJoin="round";ctx.stroke();});
         ctx.beginPath();GL.path(GL.borders);ctx.strokeStyle=COL.edge;ctx.lineWidth=.8;ctx.stroke();
         if(GL.hl&&GL.byId.has(GL.hl)){ctx.beginPath();GL.byId.get(GL.hl).forEach(f=>GL.path(f));ctx.strokeStyle=COL.edge;ctx.lineWidth=1.4;ctx.lineJoin="round";ctx.stroke();}
+        if(GL.hover&&GL.hover!==GL.hl&&GL.byId.has(GL.hover)){ctx.beginPath();GL.byId.get(GL.hover).forEach(f=>GL.path(f));ctx.fillStyle=rgba(COL.edge,.14);ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=1.8;ctx.lineJoin="round";ctx.stroke();}
         for(const id in DOTS){const ll=DOTS[id];if(!visible(ll))continue;const [x,y]=GL.proj(ll),c=GL.colorOf(id);ctx.beginPath();ctx.arc(x,y,c?4.4:1.9,0,TAU);ctx.fillStyle=c||rgba(COL.land,.8*(1-GL.dim*.6));ctx.fill();if(c){ctx.strokeStyle=COL.edge;ctx.lineWidth=1.6;ctx.stroke()}}
         // name the small lit-up countries (tiny islands and microstates) so nobody has to guess what a speck is
         // a label sits right of its dot, or left if the right would run off the globe; skipped if neither fits
@@ -1074,17 +1077,17 @@ GL.cv.addEventListener("pointermove",e=>{if(PTR.has(e.pointerId))PTR.set(e.point
     d.vx=.6*d.vx+.4*((e.clientX-d.lx)*s/dtm);d.vy=.6*d.vy+.4*(-(e.clientY-d.ly)*s/dtm);d.lx=e.clientX;d.ly=e.clientY;d.lt=now;}
   if(d){const dx=e.clientX-d.x,dy=e.clientY-d.y;if(!d.moved&&Math.abs(dx)+Math.abs(dy)>4){d.moved=true;try{GL.cv.setPointerCapture(d.id)}catch(_){}}
     if(d.moved){const s=180/(Math.PI*(GL.cv.clientWidth/2-14)*GL.zoom);GL.rot=[d.rot[0]+dx*s,Math.max(-80,Math.min(80,d.rot[1]-dy*s)),0];GL.spin=false;$("tip").hidden=true;}}
-  else if(e.pointerType==="mouse")showTip(pick(e));});
+  else if(e.pointerType==="mouse"){const hit=pick(e);GL.hover=GL.info&&hit&&hit.id||null;showTip(hit);}});
 GL.cv.addEventListener("pointerup",e=>{PTR.delete(e.pointerId);if(pinch){if(PTR.size<2)pinch=null;GL.drag=null;return;}
   const d=GL.drag;GL.drag=null;if(d&&!d.moved)showTip(pick(e));
   else if(d&&!reduceMotion&&performance.now()-d.lt<80){const v=Math.hypot(d.vx,d.vy);if(v>.02){const c=Math.min(1,.6/v);GL.fling={vx:d.vx*c,vy:d.vy*c};}}});
 GL.cv.addEventListener("pointercancel",e=>{PTR.delete(e.pointerId);if(PTR.size<2)pinch=null;GL.drag=null});
-GL.cv.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse")$("tip").hidden=true});
+GL.cv.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse"){$("tip").hidden=true;GL.hover=null;}});
 function setStage(size,hint){$("stage").dataset.size=size;const el=$("stage-hint");el.hidden=!hint;if(typeof hint==="string")el.textContent=hint;}
 function zoomBy(k){GL.zoomTo=Math.max(1,Math.min(6,GL.zoomTo*k));GL.spin=false;touch();}
 $("zin").addEventListener("click",()=>zoomBy(1.6));
 $("zout").addEventListener("click",()=>zoomBy(1/1.6));
-GL.cv.addEventListener("wheel",e=>{if(!e.ctrlKey&&GL.zoomTo===1&&e.deltaY>0)return;if(!e.ctrlKey&&GL.zoomTo===1)return;e.preventDefault();zoomBy(e.deltaY<0?1.15:1/1.15);},{passive:false});
+GL.cv.addEventListener("wheel",e=>{if(!e.ctrlKey&&GL.zoomTo<=1&&e.deltaY>0)return;e.preventDefault();zoomBy(e.deltaY<0?1.15:1/1.15);},{passive:false});
 GL.cv.addEventListener("dblclick",()=>zoomBy(1.8));
 
 /* ---------- your record: streak + passport ---------- */
@@ -1146,7 +1149,7 @@ const scoreOf=(set,A=answers())=>set.reduce((s,pid)=>s+(A[pid]?.pts||0),0);
 const app=$("app");
 let tourTimer=0,cdTimer=0;
 function setScreen(name,...nodes){document.body.classList.remove("typing");S.screen=name;S.epoch++;GL.zoomTo=1;GL.autoSpin=false;stopTimer();clearInterval(tourTimer);clearInterval(cdTimer);S.boardEl=null;$("tip").hidden=true;
-  GL.pins=[];GL.hl=null;GL.info=null;GL.labelIds=null;app.replaceChildren(...nodes);renderHud();window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
+  GL.pins=[];GL.hl=null;GL.hover=null;GL.info=null;delete $("stage").dataset.pp;GL.labelIds=null;app.replaceChildren(...nodes);renderHud();window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
 function renderHud(){
   $("hud-day").textContent=S.archive?`No. ${S.archive}`:S.practice?"Practice round":`No. ${PNUM}`;
   const st=streak(),sEl=$("hud-streak");sEl.querySelector("b").textContent=String(st);sEl.classList.toggle("hot",st>0);sEl.title=`Daily streak: ${st}`;
@@ -1942,6 +1945,11 @@ function paperMap(cv,ids,fitIds){
   ctx.fillStyle=COL.ocean;ctx.fillRect(0,0,w,hh);
   GL.feats.forEach(f=>{const id=f.properties.r,t=id?PROF.stamps[id]:undefined,inSet=!ids||ids.includes(id);ctx.beginPath();path(f);ctx.fillStyle=t!=null&&inSet?COL.t[t]:inSet?COL.land:rgba(COL.land,.35);ctx.fill();});
   ctx.beginPath();path(GL.borders);ctx.strokeStyle=COL.edge;ctx.lineWidth=.6;ctx.stroke();
+  cv._proj=proj;if(!cv._wired){cv._wired=true;
+    const at=e=>{const r=cv.getBoundingClientRect(),ll=cv._proj&&cv._proj.invert([e.clientX-r.left,e.clientY-r.top]);if(!ll)return null;const f=GL.feats.find(f=>f.properties.r&&d3.geoContains(f,ll));return f?f.properties.r:null;};
+    cv.addEventListener("pointermove",e=>{if(e.pointerType!=="mouse")return;const id=at(e);GL.hover=id;cv.style.cursor=id?"pointer":"";cv.title=id?C[id].name:"";});
+    cv.addEventListener("pointerleave",()=>{GL.hover=null;cv.title="";});
+    cv.addEventListener("click",e=>{const id=at(e);if(!id)return;GL.hl=id;GL.hlColor=PROF.stamps[id]!=null?COL.t[PROF.stamps[id]]:COL.ink;GL.hover=null;flyTo(id,900);});}
   for(const id in DOTS){if(ids&&!ids.includes(id))continue;const [x,y]=proj(DOTS[id])||[];if(x==null||x<0||y<0||x>w||y>hh)continue;const t=PROF.stamps[id];ctx.beginPath();ctx.arc(x,y,t!=null?3.6:1.6,0,Math.PI*2);ctx.fillStyle=t!=null?COL.t[t]:COL.land;ctx.fill();if(t!=null){ctx.strokeStyle=COL.edge;ctx.lineWidth=1.2;ctx.stroke();}}
 }
 const sect=(n,label,...kids)=>h("section",{class:"pp-sect"},h("div",{class:"pp-over"},h("span",null,label),h("span",null,String(n).padStart(2,"0"))),...kids);
@@ -1955,6 +1963,8 @@ function passportShell(title,sub,back,...body){
     h("div",{class:"pp-head"},h("div",null,h("div",{class:"eyebrow pp-kicker"},sub),h("h2",{class:"prompt"},title)),back),
     ...body,ret));
   setStage("sm",false);GL.dim=0;GL.spin=true;GL.colorOf=id=>PROF.stamps[id]!=null?COL.t[PROF.stamps[id]]:null;
+  $("stage").dataset.pp="1";
+  GL.info=id=>{const t=PROF.stamps[id];return t==null?{text:"Not on your map yet"}:{text:t===5?"Gold: you reached the top":"On your map",style:tv(t)};};
 }
 /* the passport: a small booklet with passport-page proportions, one page at a time */
 function passportPages(room=380,measure=null){
@@ -1963,19 +1973,23 @@ function passportPages(room=380,measure=null){
   pages.push({title:"Your map",build:()=>{const cv=h("canvas",{class:"pp-map",role:"img","aria-label":`World map with ${ids.length} stamped countries`});
     const el=h("div",{class:"pp-pagebody"},h("h3",{class:"pp-h"},ids.length?"Places you've found":"Your map is empty"),cv,
       h("div",{class:"pp-counts"},h("span",null,h("b",null,String(ids.length)),ids.length===1?"country":"countries"),h("span",{class:"gold"},h("b",null,String(golds)),"gold"),h("span",null,h("b",null,String(cards.length)),cards.length===1?"postcard":"postcards")),
-      h("p",{class:"pp-note"},"Each country is coloured by how high it climbed. Reach the top (one hint at most) for gold and a postcard."));
+      h("p",{class:"pp-note"},"Each country is coloured by how high it climbed. Reach the top (one hint at most) for gold and a postcard. Tap a country to find it on the globe."));
     requestAnimationFrame(()=>{const draw=()=>paperMap(cv,null,null);const ro=new ResizeObserver(()=>{if(cv.isConnected)draw();else ro.disconnect();});ro.observe(cv);draw();});return el;}});
   // postcard sets, packed so each page's sets fit its height (room = the page body's height in px)
   const sets=SET_ORDER.filter(kind=>ALL_CARDS.some(c=>c.kind===kind)||cards.some(k=>PROF.cards[k].kind===kind)).map(kind=>{
-    const all=ALL_CARDS.filter(c=>c.kind===kind).map(c=>c.key),mine=cards.filter(k=>PROF.cards[k].kind===kind);return {kind,keys:[...new Set([...mine,...all])],mine:mine.length};});
+    const all=ALL_CARDS.filter(c=>c.kind===kind).map(c=>c.key),mine=cards.filter(k=>PROF.cards[k].kind===kind);const keys=[...new Set([...mine,...all])];return {kind,keys,mine:mine.length,total:keys.length};});
   const setEl=(g,at)=>h("div",{class:"pp-set"},
-      h("div",{class:"pp-set-h"},h("b",null,SET_NAME[g.kind]),h("em",null,`${g.mine}/${g.keys.length}`)),
+      h("div",{class:"pp-set-h"},h("b",null,SET_NAME[g.kind]+(g.label?", "+g.label:"")),h("em",null,g.label?"":`${g.mine}/${g.total||g.keys.length}`)),
       h("div",{class:"pp-album"},g.keys.map(key=>{const c=PROF.cards[key];if(!c)return h("span",{class:"pp-seal pp-empty","aria-label":"Not found yet"},h("i",null,"?"));
         const bt=h("button",{type:"button",class:"pp-seal",style:"color:"+inkFor(key),onclick:()=>openPostcard(key,at),"aria-label":c.name+" postcard"});bt.innerHTML=cardArt(c,84);return bt;})));
   // each set is measured on this screen, and a page takes sets until the next one would run past its foot
   const GAP=12;let cur=[],used=0;
   const flush=()=>{if(cur.length){const group=cur,at=pages.length;pages.push({title:"Postcards",build:()=>h("div",{class:"pp-pagebody"},...group.map(g=>setEl(g,at)))});}cur=[];used=0;};
-  for(const st of sets){const need=(measure?measure(setEl(st,0)):200)+(cur.length?GAP:0);if(cur.length&&used+need>room)flush();cur.push(st);used+=need;}flush();
+  const fits=g=>!measure||measure(setEl(g,0))<=room;
+  const parts=[];for(const st of sets){if(fits(st)){parts.push(st);continue;}
+    let rest=st.keys,first=true;while(rest.length){let n=rest.length;while(n>4&&!fits({...st,keys:rest.slice(0,n),label:first?null:"continued"}))n-=4;
+      parts.push({...st,keys:rest.slice(0,n),label:first?null:"continued"});rest=rest.slice(n);first=false;}}
+  for(const st of parts){const need=(measure?measure(setEl(st,0)):200)+(cur.length?GAP:0);if(cur.length&&used+need>room)flush();cur.push(st);used+=need;}flush();
   return pages;
 }
 let PP_PAGE=0;
@@ -1995,6 +2009,12 @@ renderPassport=function(page=0){
   const measure=el=>{probe.append(el);const hh=el.getBoundingClientRect().height;el.remove();return hh;};
   pages=passportPages(Math.max(200,probe.clientHeight-parseFloat(getComputedStyle(probe).paddingTop)-6),measure);PP_PAGE=Math.max(0,Math.min(pages.length-1,page));
   show(0);
+  // repack when the window changes size or the fonts finish loading, so a page never spills
+  const bk=document.querySelector(".pp-booklet");let w0=bk&&bk.clientWidth,h0=window.innerHeight,tm=0;
+  const again=()=>{if(S.screen!=="passport"||!pageEl.isConnected)return;const b=document.querySelector(".pp-booklet");if(!b||(b.clientWidth===w0&&window.innerHeight===h0))return;renderPassport(PP_PAGE);};
+  if(!renderPassport.wired){renderPassport.wired=true;window.addEventListener("resize",()=>{clearTimeout(tm);tm=setTimeout(()=>{const fn=renderPassport.again;if(fn)fn();},200);});}
+  renderPassport.again=again;
+  if(document.fonts&&document.fonts.status!=="loaded")document.fonts.ready.then(()=>{if(S.screen==="passport"&&pageEl.isConnected)renderPassport(PP_PAGE);});
 };
 /* a postcard on its own: the place on the front, a written back with a stamp box */
 function openPostcard(key,fromPage=0){
